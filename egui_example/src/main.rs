@@ -104,13 +104,14 @@ enum MyEnum {
     },
 }
 
+#[allow(dead_code)]
 fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::Ui) {
     ui.label("C'EST LA GIGA FONCTION CUSTOM WÉ");
     boolean.inspect(label, ui);
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.inspect_mut("Test App", ui);
             // self.inspect("Test App", ui);
@@ -118,9 +119,6 @@ impl eframe::App for MyApp {
             let salut = Salut(1, 2.0);
             salut.inspect("label for tuple struct", ui);
         });
-
-        // Resize the native window to be just the size we need it to be:
-        frame.set_window_size(ctx.used_size());
     }
 }
 
