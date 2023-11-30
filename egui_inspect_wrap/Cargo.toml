@@ -1,5 +1,5 @@
 [package]
-name = "egui_inspect_derived"
+name = "egui_inspect_wrap"
 version = "0.1.0"
 edition = "2021"
 

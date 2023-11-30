@@ -864,7 +864,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui_inspect",
- "egui_inspect_derived",
+ "egui_inspect_wrap",
 ]
 
 [[package]]
@@ -901,7 +901,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui_inspect_derived"
+name = "egui_inspect_wrap"
 version = "0.1.0"
 dependencies = [
  "egui",

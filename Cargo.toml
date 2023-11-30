@@ -3,5 +3,5 @@ members = [
     "egui_example",
     "egui_inspect",
     "egui_inspect_derive",
-    "egui_inspect_derived",
+    "egui_inspect_wrap",
 ]

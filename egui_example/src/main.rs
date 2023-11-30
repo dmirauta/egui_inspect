@@ -4,7 +4,7 @@ use egui::{Color32, Stroke, Style};
 use egui_inspect::{EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
 use eframe::{egui, NativeOptions};
-use egui_inspect_derived::VisualsUi;
+use egui_inspect_wrap::VisualsUi;
 
 #[derive(EguiInspect)]
 #[inspect(no_border)]
