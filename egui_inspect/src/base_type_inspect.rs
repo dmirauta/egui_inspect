@@ -1,5 +1,6 @@
 use crate::InspectNumber;
 use crate::InspectString;
+use egui::Stroke;
 use egui::{Color32, Ui};
 use std::ops::Add;
 
@@ -231,5 +232,30 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
                 }
             }
         }
+    }
+}
+
+//// Egui style types
+
+impl crate::EguiInspect for Color32 {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.label(format!("{label}: {:?}", self));
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label(label);
+            ui.color_edit_button_srgba(self);
+        });
+    }
+}
+
+impl crate::EguiInspect for Stroke {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.label(format!("{label}: {:?}", self));
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        egui::stroke_ui(ui, self, label);
     }
 }

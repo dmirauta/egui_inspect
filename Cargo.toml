@@ -1,2 +1,7 @@
 [workspace]
-members = ["egui_example", "egui_inspect", "egui_inspect_derive"]
+members = [
+    "egui_example",
+    "egui_inspect",
+    "egui_inspect_derive",
+    "egui_inspect_derived",
+]
