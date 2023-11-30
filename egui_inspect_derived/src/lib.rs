@@ -12,24 +12,24 @@ use egui_inspect::EguiInspect;
 /// Into<OriginalStruct>
 #[macro_export]
 macro_rules! shadow_struct {
-    ($ident: ident, $ident2: ident, $($field: ident: $type: ty),*) => {
+    ($shadowed: ident, $shadow: ident, $($field: ident: $type: ty),*) => {
         #[derive(EguiInspect, Clone)]
         #[inspect(collapsible)]
-        pub struct $ident2 {
+        pub struct $shadow {
             $(pub $field: $type,)*
         }
 
-        impl From<$ident> for $ident2 {
-            fn from($ident {$($field,)*}: $ident) -> Self {
-                $ident2 {
+        impl From<$shadowed> for $shadow {
+            fn from($shadowed {$($field,)*}: $shadowed) -> Self {
+                $shadow {
                     $($field: $field.into(),)*
                 }
             }
         }
 
-        impl From<$ident2> for $ident {
-            fn from($ident2 {$($field,)*}: $ident2) -> Self {
-                $ident {
+        impl From<$shadow> for $shadowed {
+            fn from($shadow {$($field,)*}: $shadow) -> Self {
+                $shadowed {
                     $($field: $field.into(),)*
                 }
             }
@@ -40,33 +40,33 @@ macro_rules! shadow_struct {
 /// similar to shadow_struct!(...), but need not shadow all fields
 #[macro_export]
 macro_rules! shadow_struct_w_default {
-    ($ident: ident, $ident2: ident, $($field: ident: $type: ty),*) => {
+    ($shadowed: ident, $shadow: ident, $($field: ident: $type: ty),*) => {
         #[derive(EguiInspect, Clone)]
         #[inspect(collapsible)]
-        pub struct $ident2 {
+        pub struct $shadow {
             $(pub $field: $type,)*
         }
 
-        impl From<$ident> for $ident2 {
-            fn from($ident {$($field,)* ..}: $ident) -> Self {
-                $ident2 {
+        impl From<$shadowed> for $shadow {
+            fn from($shadowed {$($field,)* ..}: $shadowed) -> Self {
+                $shadow {
                     $($field: $field.into(),)*
                 }
             }
         }
 
-        impl From<$ident2> for $ident {
-            fn from($ident2 {$($field,)*}: $ident2) -> Self {
-                $ident {
+        impl From<$shadow> for $shadowed {
+            fn from($shadow {$($field,)*}: $shadow) -> Self {
+                $shadowed {
                     $($field: $field.into(),)*
                     ..Default::default()
                 }
             }
         }
 
-        impl Default for $ident2 {
+        impl Default for $shadow {
             fn default() -> Self {
-                $ident::default().into()
+                $shadowed::default().into()
             }
         }
 
