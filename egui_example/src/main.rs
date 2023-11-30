@@ -35,6 +35,8 @@ struct MyApp {
     my_enum: MyEnum,
     #[inspect(no_edit)]
     my_enum_readonly: MyEnum,
+    #[inspect(custom_func_mut = "custom_bool_inspect")]
+    custom_bool: bool,
 }
 
 impl Default for MyApp {
@@ -64,6 +66,7 @@ impl Default for MyApp {
                 salut: Default::default(),
             },
             my_enum_readonly: MyEnum::AnOptionWithNoData,
+            custom_bool: false,
         }
     }
 }
@@ -106,7 +109,7 @@ enum MyEnum {
 
 #[allow(dead_code)]
 fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::Ui) {
-    ui.label("C'EST LA GIGA FONCTION CUSTOM WÉ");
+    ui.label("Overriden inspect for the following bool");
     boolean.inspect(label, ui);
 }
 
