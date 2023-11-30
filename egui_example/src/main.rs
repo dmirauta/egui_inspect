@@ -1,11 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::error::Error;
-
 use egui::{Color32, Stroke};
 use egui_inspect::{EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
-use eframe::egui;
+use eframe::{egui, NativeOptions};
 
 #[derive(EguiInspect)]
 #[inspect(no_border)]
@@ -30,8 +28,8 @@ struct MyApp {
     ugly_internal_field_name: u16,
     #[inspect(name = "A tuple struct")]
     ugly_internal_field_name_2: Salut,
-    #[inspect(name = "A struct with three floats")]
-    vector_struct: Vector,
+    #[inspect(name = "An optional struct with three floats")]
+    opt_vector_struct: Option<Vector>,
     my_enum: MyEnum,
     #[inspect(no_edit)]
     my_enum_readonly: MyEnum,
@@ -56,11 +54,11 @@ impl Default for MyApp {
             log_varied_float64: 6.0,
             ugly_internal_field_name: 16,
             ugly_internal_field_name_2: Salut(50, 123.45),
-            vector_struct: Vector {
+            opt_vector_struct: Some(Vector {
                 x: 10.0,
                 y: 20.0,
                 z: 30.0,
-            },
+            }),
             my_enum: MyEnum::AnOptionWithStructData {
                 vec: Default::default(),
                 salut: Default::default(),
@@ -117,20 +115,23 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.inspect_mut("Test App", ui);
+            // or readonly
             // self.inspect("Test App", ui);
 
+            // more ui...
             let salut = Salut(1, 2.0);
             salut.inspect("label for tuple struct", ui);
+
+            // logic based on set values...
+            // let c = self.float64 + self.log_varied_float64;
         });
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let options = eframe::NativeOptions::default();
+fn main() -> eframe::Result<()> {
     eframe::run_native(
         "My egui App",
-        options,
+        NativeOptions::default(),
         Box::new(|_cc| Box::new(MyApp::default())),
-    )?;
-    Ok(())
+    )
 }

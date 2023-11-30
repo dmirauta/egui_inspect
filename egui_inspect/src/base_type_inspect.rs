@@ -200,3 +200,36 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
         });
     }
 }
+
+impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        match self {
+            Some(v) => {
+                v.inspect(label, ui);
+            }
+            None => {
+                ui.label(format!("{label} is None").as_str());
+            }
+        }
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        match self {
+            Some(v) => {
+                v.inspect_mut(label, ui);
+                if ui.button(format!("Clear {label}").as_str()).clicked() {
+                    *self = None;
+                }
+            }
+            None => {
+                ui.label(format!("{label} is None").as_str());
+                if ui
+                    .button(format!("Set {label} to Default").as_str())
+                    .clicked()
+                {
+                    *self = Some(T::default());
+                }
+            }
+        }
+    }
+}

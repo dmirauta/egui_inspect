@@ -36,19 +36,21 @@ pub(crate) fn get_default_function_call(
     let base = if loose_field {
         quote!(#name)
     } else {
-        quote!(self.#name)
+        if mutable {
+            quote!(&mut self.#name)
+        } else {
+            quote!(&self.#name)
+        }
     };
 
     return if mutable {
         quote_spanned! {field.span() => {
-            // egui_inspect::EguiInspect::inspect_mut(&mut #base, &#name_str, ui);
-            #base.inspect_mut(&#name_str, ui);
+            egui_inspect::EguiInspect::inspect_mut(#base, &#name_str, ui);
             }
         }
     } else {
         quote_spanned! {field.span() => {
-            // egui_inspect::EguiInspect::inspect(&#base, &#name_str, ui);
-            #base.inspect(&#name_str, ui);
+            egui_inspect::EguiInspect::inspect(#base, &#name_str, ui);
             }
         }
     };
