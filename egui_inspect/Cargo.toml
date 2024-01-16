@@ -11,4 +11,4 @@ categories = ["gui"]
 
 [dependencies]
 egui_inspect_derive = { path = "../egui_inspect_derive", version = "0.1" }
-egui = "0.24"
+egui = "0.25"
