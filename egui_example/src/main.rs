@@ -1,15 +1,14 @@
+use std::collections::{BTreeMap, HashMap};
+
 use egui::{Color32, Stroke, Style};
 use egui_inspect::{EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
 use eframe::{egui, NativeOptions};
 use egui_inspect_wrap::VisualsUi;
+use egui_plot::{Line, Plot};
 
 #[derive(EguiInspect)]
-#[inspect(no_border)]
-struct MyApp {
-    edit_style: bool,
-    #[inspect(hide)]
-    visuals: VisualsUi,
+struct Primitives {
     #[inspect(no_edit)]
     string: String,
     #[inspect(multiline)]
@@ -18,56 +17,89 @@ struct MyApp {
     unsigned32: u32,
     #[inspect(hide)]
     _skipped: bool,
-    strings: Vec<String>,
-    #[inspect(no_edit)]
+    #[inspect(custom_func_mut = "custom_bool_inspect")]
+    custom_bool: bool,
     raw_string: &'static str,
     #[inspect(slider, min = -43.0, max = 125.0)]
     float64: f64,
     #[inspect(log_slider, min = -43.0, max = 125.0)]
     log_varied_float64: f64,
-    #[inspect(name = "A proper field name")]
-    ugly_internal_field_name: u16,
-    #[inspect(name = "A tuple struct")]
-    ugly_internal_field_name_2: Salut,
-    #[inspect(name = "An optional struct with three floats")]
-    opt_vector_struct: Option<Vector>,
-    my_enum: MyEnum,
-    #[inspect(no_edit)]
-    my_enum_readonly: MyEnum,
-    #[inspect(custom_func_mut = "custom_bool_inspect")]
-    custom_bool: bool,
 }
 
-impl Default for MyApp {
+impl Default for Primitives {
     fn default() -> Self {
         Self {
-            edit_style: false,
-            visuals: Default::default(),
             string: "I am a single line string".to_owned(),
             code: "Hello\nI\nam\na\nmultiline\nstring".to_owned(),
             _skipped: true,
+            custom_bool: true,
             unsigned32: 42,
-            strings: vec![
-                "Bonjour".to_string(),
-                "Voici une liste de string".to_string(),
-                "Avec plusieurs strings".to_string(),
-            ],
             raw_string: "YetAnotherString",
             float64: 6.0,
             log_varied_float64: 6.0,
-            ugly_internal_field_name: 16,
-            ugly_internal_field_name_2: Salut(50, 123.45),
-            opt_vector_struct: Some(Vector {
-                x: 10.0,
-                y: 20.0,
-                z: 30.0,
-            }),
-            my_enum: MyEnum::AnOptionWithStructData {
-                vec: Default::default(),
-                salut: Default::default(),
+        }
+    }
+}
+
+#[derive(EguiInspect)]
+struct Containers {
+    #[inspect(name = "vector")]
+    an_ugly_internal_name: Vec<[f64; 2]>,
+    string_map: HashMap<String, Custom>,
+    ordered_string_map: BTreeMap<String, u32>,
+}
+
+impl Default for Containers {
+    fn default() -> Self {
+        let mut string_map = HashMap::new();
+        string_map.insert("one thing".to_string(), Custom(50, 123.45));
+        string_map.insert("another".to_string(), Custom(200, 13.45));
+
+        let mut ordered_string_map = BTreeMap::new();
+        for (i, key) in [
+            "Bonjour".to_string(),
+            "Voici une liste de string".to_string(),
+            "Avec plusieurs strings".to_string(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            ordered_string_map.insert(key, (i as u32) * 5);
+        }
+
+        Self {
+            an_ugly_internal_name: vec![[1.0, 28.0], [2.0, 15.0], [4.0, 20.0], [8.0, 3.0]],
+            string_map,
+            ordered_string_map,
+        }
+    }
+}
+
+#[derive(EguiInspect, Default)]
+#[inspect(no_border)]
+struct MyApp {
+    edit_style: bool,
+    #[inspect(hide)]
+    visuals: VisualsUi,
+    some_primitives: Primitives,
+    containers: Containers,
+    fancy_enum: MyEnum,
+}
+
+impl MyApp {
+    fn new() -> Self {
+        Self {
+            fancy_enum: MyEnum::VariantWithStructData {
+                a_plot: APlot {
+                    stroke: Stroke {
+                        width: 5.0,
+                        color: Color32::from_rgba_unmultiplied(41, 91, 37, 55),
+                    },
+                    xy: vec![],
+                },
+                optional_data: Some(0),
             },
-            my_enum_readonly: MyEnum::AnOptionWithNoData,
-            custom_bool: false,
+            ..Default::default()
         }
     }
 }
@@ -86,25 +118,37 @@ static CUSTOM_BOX: FrameStyle = FrameStyle {
     collapsible,
     on_hover_text = "show when hovering"
 )]
-struct Salut(i32, f32);
+struct Custom(i32, f32);
 
-#[derive(EguiInspect, PartialEq, Default)]
-struct Vector {
-    #[inspect(name = "X axis")]
-    x: f32,
-    #[inspect(name = "Y axis")]
-    y: f32,
-    #[inspect(name = "Z axis")]
-    z: f32,
+#[derive(Default, PartialEq)]
+struct APlot {
+    stroke: Stroke,
+    xy: Vec<[f64; 2]>,
 }
 
-#[derive(EguiInspect, PartialEq)]
+impl EguiInspect for APlot {
+    fn inspect(&self, _label: &str, _ui: &mut egui::Ui) {
+        todo!();
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        ui.label(label);
+        self.stroke.inspect_mut("stroke", ui);
+        Plot::new(label).height(200.0).show(ui, |pui| {
+            pui.line(Line::new(self.xy.clone()).stroke(self.stroke))
+        });
+    }
+}
+
+#[derive(EguiInspect, PartialEq, Default)]
 enum MyEnum {
-    AnOptionWithNoData,
-    AnOptionWithStructData {
-        vec: Vector,
-        #[inspect(name = "salut_field")]
-        salut: Salut,
+    #[default]
+    PlainVariant,
+    DifferentPlainVariant,
+    VariantWithStructData {
+        #[inspect(name = "Mirroring data in containers.vector, try editing it!")]
+        a_plot: APlot,
+        optional_data: Option<usize>,
     },
 }
 
@@ -115,25 +159,25 @@ fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::U
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let MyEnum::VariantWithStructData { a_plot, .. } = &mut self.fancy_enum {
+            a_plot.xy = self.containers.an_ugly_internal_name.clone();
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.columns(2, |cols| {
                     let ui = &mut cols[0];
+                    // display own derived ui mutably
                     self.inspect_mut("Test App", ui);
                     // or readonly
                     // self.inspect("Test App", ui);
 
-                    // more ui...
-                    let salut = Salut(1, 2.0);
-                    salut.inspect("label for tuple struct", ui);
-
-                    // logic based on set values...
-                    // let c = self.float64 + self.log_varied_float64;
-                    // should ideally only set when changing
+                    // conditionally showing other ui based on interactions
                     if self.edit_style {
                         self.visuals
                             .inspect_mut("visuals (egui style)", &mut cols[1]);
 
+                        // should ideally only set when changing
                         ctx.set_style(Style {
                             visuals: self.visuals.clone().into(),
                             ..Default::default()
@@ -149,6 +193,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "My egui App",
         NativeOptions::default(),
-        Box::new(|_cc| Box::<MyApp>::default()),
+        Box::new(|_cc| Box::new(MyApp::new())),
     )
 }

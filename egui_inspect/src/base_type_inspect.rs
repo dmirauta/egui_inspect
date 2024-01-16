@@ -1,3 +1,7 @@
+use std::cell::RefCell;
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+
 use crate::InspectNumber;
 use crate::InspectString;
 use egui::Stroke;
@@ -146,26 +150,6 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
     fn inspect(&self, label: &str, ui: &mut Ui) {
         let n = self.len();
         ui.collapsing(format!("{label} (len {n})"), |ui| {
-            for item in self.iter() {
-                item.inspect("item", ui);
-            }
-        });
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
-        let n = self.len();
-        ui.collapsing(format!("{label} (len {n})"), |ui| {
-            for item in self.iter_mut() {
-                item.inspect_mut("item", ui);
-            }
-        });
-    }
-}
-
-impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
-    fn inspect(&self, label: &str, ui: &mut Ui) {
-        let n = self.len();
-        ui.collapsing(format!("{label} (len {n})"), |ui| {
             for (i, item) in self.iter().enumerate() {
                 item.inspect(format!("{label}[{i}]").as_str(), ui);
             }
@@ -175,6 +159,25 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
     fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
         let n = self.len();
         ui.collapsing(format!("{label} (len {n})"), |ui| {
+            for (i, item) in self.iter_mut().enumerate() {
+                item.inspect_mut(format!("{label}[{i}]").as_str(), ui);
+            }
+        });
+    }
+}
+
+impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
+    fn inspect(&self, label: &str, ui: &mut Ui) {
+        ui.collapsing(format!("{label}"), |ui| {
+            for (i, item) in self.iter().enumerate() {
+                item.inspect(format!("{label}[{i}]").as_str(), ui);
+            }
+        });
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
+        let n = self.len();
+        ui.collapsing(format!("{label}"), |ui| {
             let mut to_remove = None;
             let mut to_swap = None;
             for (i, item) in self.iter_mut().enumerate() {
@@ -207,6 +210,57 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
         });
     }
 }
+
+thread_local! {
+    pub static NEW_KEY: RefCell<String> = Default::default();
+}
+
+macro_rules! impl_inspect_map {
+    ($($t:ident),+) => {
+        $(
+        impl<T: crate::EguiInspect + Default> crate::EguiInspect for $t<String, T> {
+            fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+                ui.collapsing(format!("{label}"), |ui| {
+                    for (key, item) in self.iter() {
+                        item.inspect(key.as_str(), ui);
+                    }
+                });
+            }
+
+            fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+                ui.collapsing(format!("{label}"), |ui| {
+                    let mut to_remove = None;
+                    for (key, item) in self.iter_mut() {
+                        ui.horizontal_top(|ui| {
+                            item.inspect_mut(key.as_str(), ui);
+
+                            if ui.button("Remove").clicked() {
+                                to_remove = Some(key.clone());
+                            }
+                        });
+                    }
+
+                    if let Some(key) = to_remove {
+                        self.remove(&key);
+                    }
+
+                    ui.menu_button("Insert default", |ui| {
+                        NEW_KEY.with_borrow_mut(|s| {
+                            s.inspect_mut("new key", ui);
+                            if ui.button("Insert").clicked() {
+                                self.insert(s.clone(), T::default());
+                                ui.close_menu();
+                            }
+                        });
+                    });
+                });
+            }
+        }
+        )*
+    };
+}
+
+impl_inspect_map!(HashMap, BTreeMap);
 
 impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
