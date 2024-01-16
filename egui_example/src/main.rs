@@ -1,5 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
 use egui::{Color32, Stroke, Style};
 use egui_inspect::{EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
@@ -20,7 +18,6 @@ struct MyApp {
     unsigned32: u32,
     #[inspect(hide)]
     _skipped: bool,
-    #[inspect(no_edit)]
     strings: Vec<String>,
     #[inspect(no_edit)]
     raw_string: &'static str,
@@ -111,7 +108,6 @@ enum MyEnum {
     },
 }
 
-#[allow(dead_code)]
 fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::Ui) {
     ui.label("Overriden inspect for the following bool");
     boolean.inspect(label, ui);
@@ -153,6 +149,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "My egui App",
         NativeOptions::default(),
-        Box::new(|_cc| Box::new(MyApp::default())),
+        Box::new(|_cc| Box::<MyApp>::default()),
     )
 }

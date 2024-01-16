@@ -2,7 +2,6 @@ use crate::InspectNumber;
 use crate::InspectString;
 use egui::Stroke;
 use egui::{Color32, Ui};
-use std::ops::Add;
 
 macro_rules! impl_inspect_float {
     ($($t:ty),+) => {
@@ -145,58 +144,65 @@ impl crate::EguiInspect for bool {
 
 impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
     fn inspect(&self, label: &str, ui: &mut Ui) {
-        egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", N).as_str())).show(
-            ui,
-            |ui| {
-                for item in self.iter() {
-                    item.inspect("item", ui);
-                }
-            },
-        );
+        let n = self.len();
+        ui.collapsing(format!("{label} (len {n})"), |ui| {
+            for item in self.iter() {
+                item.inspect("item", ui);
+            }
+        });
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
-        egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", N).as_str())).show(
-            ui,
-            |ui| {
-                for item in self.iter_mut() {
-                    item.inspect_mut("item", ui);
-                }
-            },
-        );
+        let n = self.len();
+        ui.collapsing(format!("{label} (len {n})"), |ui| {
+            for item in self.iter_mut() {
+                item.inspect_mut("item", ui);
+            }
+        });
     }
 }
 
 impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
     fn inspect(&self, label: &str, ui: &mut Ui) {
-        egui::CollapsingHeader::new(label.to_string().add(format!("[{}]", self.len()).as_str()))
-            .show(ui, |ui| {
-                for item in self.iter() {
-                    item.inspect("item", ui);
-                }
-            });
+        let n = self.len();
+        ui.collapsing(format!("{label} (len {n})"), |ui| {
+            for (i, item) in self.iter().enumerate() {
+                item.inspect(format!("{label}[{i}]").as_str(), ui);
+            }
+        });
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
-        ui.horizontal_top(|ui| {
-            egui::CollapsingHeader::new(
-                label.to_string().add(format!("[{}]", self.len()).as_str()),
-            )
-            .id_source(label)
-            .show(ui, |ui| {
-                for item in self.iter_mut() {
-                    item.inspect_mut("item", ui);
-                }
-            });
+        let n = self.len();
+        ui.collapsing(format!("{label} (len {n})"), |ui| {
+            let mut to_remove = None;
+            let mut to_swap = None;
+            for (i, item) in self.iter_mut().enumerate() {
+                ui.horizontal_top(|ui| {
+                    item.inspect_mut(format!("{label}[{i}]").as_str(), ui);
 
-            let response = ui.button("Add");
-            if response.clicked() {
-                self.push(T::default());
+                    if ui.button("Remove").clicked() {
+                        to_remove = Some(i);
+                    }
+
+                    if i < n - 1 {
+                        if ui.button("Swap with next").clicked() {
+                            to_swap = Some(i);
+                        }
+                    }
+                });
             }
 
-            let response = ui.button("Pop");
-            if response.clicked() {
-                self.pop();
+            if let Some(i) = to_remove {
+                self.remove(i);
+            }
+            if let Some(i) = to_swap {
+                let e = self.remove(i);
+                self.insert(i + 1, e);
+            }
+
+            if ui.button("Push default").clicked() {
+                self.push(T::default());
             }
         });
     }
@@ -215,23 +221,22 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        match self {
+        ui.horizontal_top(|ui| match self {
             Some(v) => {
-                v.inspect_mut(label, ui);
-                if ui.button(format!("Clear {label}").as_str()).clicked() {
+                ui.vertical(|ui| {
+                    v.inspect_mut(label, ui);
+                });
+                if ui.button(format!("Set to None").as_str()).clicked() {
                     *self = None;
                 }
             }
             None => {
-                ui.label(format!("{label} is None").as_str());
-                if ui
-                    .button(format!("Set {label} to Default").as_str())
-                    .clicked()
-                {
+                ui.label(format!("\"{label}\" is None").as_str());
+                if ui.button(format!("Set to default").as_str()).clicked() {
                     *self = Some(T::default());
                 }
             }
-        }
+        });
     }
 }
 
