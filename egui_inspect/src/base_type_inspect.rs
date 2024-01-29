@@ -181,9 +181,9 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
             let mut to_remove = None;
             let mut to_swap = None;
             for (i, item) in self.iter_mut().enumerate() {
-                ui.horizontal_top(|ui| {
-                    item.inspect_mut(format!("{label}[{i}]").as_str(), ui);
+                item.inspect_mut(format!("{label}[{i}]").as_str(), ui);
 
+                ui.horizontal_top(|ui| {
                     if ui.button("Remove").clicked() {
                         to_remove = Some(i);
                     }
@@ -231,13 +231,11 @@ macro_rules! impl_inspect_map {
                 ui.collapsing(format!("{label}"), |ui| {
                     let mut to_remove = None;
                     for (key, item) in self.iter_mut() {
-                        ui.horizontal_top(|ui| {
-                            item.inspect_mut(key.as_str(), ui);
+                        item.inspect_mut(key.as_str(), ui);
 
-                            if ui.button("Remove").clicked() {
-                                to_remove = Some(key.clone());
-                            }
-                        });
+                        if ui.button("Remove").clicked() {
+                            to_remove = Some(key.clone());
+                        }
                     }
 
                     if let Some(key) = to_remove {
