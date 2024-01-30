@@ -96,13 +96,17 @@ impl_inspect_int!(isize, usize);
 impl crate::EguiInspect for &'static str {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label(label.to_owned() + ":");
+            if label != "" {
+                ui.label(label.to_owned() + ":");
+            }
             ui.label(self.to_string());
         });
     }
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label(label.to_owned() + ":");
+            if label != "" {
+                ui.label(label.to_owned() + ":");
+            }
             ui.colored_label(Color32::from_rgb(255, 0, 0), self.to_string())
                 .on_hover_text("inspect_mut is not implemented for &'static str");
         });
@@ -112,7 +116,9 @@ impl crate::EguiInspect for &'static str {
 impl crate::EguiInspect for String {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label(label.to_owned() + ":");
+            if label != "" {
+                ui.label(label.to_owned() + ":");
+            }
             ui.label(self);
         });
     }
@@ -124,14 +130,18 @@ impl crate::EguiInspect for String {
 impl crate::InspectString for String {
     fn inspect_mut_multiline(&mut self, label: &str, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(label.to_owned() + ":");
+            if label != "" {
+                ui.label(label.to_owned() + ":");
+            }
             ui.text_edit_multiline(self);
         });
     }
 
     fn inspect_mut_singleline(&mut self, label: &str, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(label.to_owned() + ":");
+            if label != "" {
+                ui.label(label.to_owned() + ":");
+            }
             ui.text_edit_singleline(self);
         });
     }

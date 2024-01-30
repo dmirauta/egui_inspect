@@ -168,9 +168,16 @@ impl eframe::App for MyApp {
                 ui.columns(2, |cols| {
                     let ui = &mut cols[0];
                     // display own derived ui mutably
-                    self.inspect_mut("Test App", ui);
+                    self.inspect_mut("", ui);
                     // or readonly
                     // self.inspect("Test App", ui);
+
+                    ui.menu_button("inspected label", |ui| {
+                        "A simple label, which demands required space.".inspect("", ui);
+                    });
+                    ui.menu_button("ui.label", |ui| {
+                        ui.label("A label with potentially odd kerning.");
+                    });
 
                     // conditionally showing other ui based on interactions
                     if self.edit_style {
