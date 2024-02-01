@@ -4,6 +4,10 @@ This is a fork of [egui_inspect](https://github.com/Meisterlama/egui_inspect).
 
 Seeks to derive a graphical interface mostly from some light annotations on the structs we wish to expose.
 
+![background_task](resources/background.png)
+
+For further options see `egui_example/src/showcase.rs`.
+
 ![screenshot](resources/screenshot.png)
 
 To use this fork, add the following to your `Cargo.toml`.

@@ -1,6 +1,9 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crate::InspectNumber;
 use crate::InspectString;
@@ -324,5 +327,33 @@ impl crate::EguiInspect for Stroke {
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         egui::stroke_ui(ui, self, label);
+    }
+}
+
+impl<T: crate::EguiInspect> crate::EguiInspect for Arc<Mutex<T>> {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        if let Ok(guard) = self.try_lock() {
+            guard.inspect(label, ui);
+        }
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        if let Ok(mut guard) = self.try_lock() {
+            guard.inspect_mut(label, ui);
+        }
+    }
+}
+
+impl<T: crate::EguiInspect> crate::EguiInspect for Rc<RefCell<T>> {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        if let Ok(guard) = self.try_borrow() {
+            guard.inspect(label, ui);
+        }
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        if let Ok(mut guard) = self.try_borrow_mut() {
+            guard.inspect_mut(label, ui);
+        }
     }
 }

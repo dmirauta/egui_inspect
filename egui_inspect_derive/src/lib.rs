@@ -163,7 +163,7 @@ fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> Tok
         quote!(
             #reflect_variant_name
             ui.horizontal(|ui| {
-                ::egui::ComboBox::new(label, "")
+                ::egui::ComboBox::new(format!("{self:p}").as_str(), "")
                     .selected_text(current_variant)
                     .show_ui(ui, |ui| {
                         #(#combo_opts;)*
