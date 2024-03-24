@@ -173,10 +173,10 @@ impl eframe::App for MyApp {
                     // self.inspect("Test App", ui);
 
                     ui.menu_button("inspected label", |ui| {
-                        "A simple label, which demands required space.".inspect("", ui);
+                        "Show a simple label, which demands required space.".inspect("", ui);
                     });
                     ui.menu_button("ui.label", |ui| {
-                        ui.label("A label with potentially odd kerning.");
+                        ui.label("Show a label with potentially odd kerning.");
                     });
 
                     // conditionally showing other ui based on interactions

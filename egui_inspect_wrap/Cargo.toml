@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 egui_inspect = { path = "../egui_inspect", version = "0.1" }
-egui = "0.25"
+egui = "0.26"
