@@ -13,15 +13,16 @@ struct Primitives {
     string: String,
     #[inspect(multiline)]
     code: String,
-    #[inspect(min = 12.0, max = 53.0)]
     unsigned32: u32,
     #[inspect(hide)]
     _skipped: bool,
     #[inspect(custom_func_mut = "custom_bool_inspect")]
     custom_bool: bool,
     raw_string: &'static str,
+    #[inspect(slider = false, min = 10.0, max = 125.0)]
+    usize: usize,
     #[inspect(slider, min = -43.0, max = 125.0)]
-    float64: f64,
+    isize: isize,
     #[inspect(log_slider, min = -43.0, max = 125.0)]
     log_varied_float64: f64,
 }
@@ -35,7 +36,8 @@ impl Default for Primitives {
             custom_bool: true,
             unsigned32: 42,
             raw_string: "YetAnotherString",
-            float64: 6.0,
+            usize: 20,
+            isize: 6,
             log_varied_float64: 6.0,
         }
     }

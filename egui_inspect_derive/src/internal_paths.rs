@@ -41,9 +41,8 @@ pub(crate) fn try_handle_internal_path(
     }
 
     match path_str.as_str() {
-        "f64" | "f32" | "u8" | "i8" | "u16" | "i16" | "u32" | "i32" | "u64" | "i64" => {
-            handle_number_path(&field, mutable, &attrs, loose_field)
-        }
+        "f64" | "f32" | "u8" | "i8" | "u16" | "i16" | "u32" | "i32" | "u64" | "i64" | "usize"
+        | "isize" => handle_number_path(&field, mutable, &attrs, loose_field),
         "String" => handle_string_path(&field, mutable, &attrs),
         _ => None,
     }
@@ -78,6 +77,26 @@ fn handle_number_path(
         quote!(self.#name)
     };
 
+    if mutable && !slider {
+        match (min, max) {
+            (Some(mi), Some(ma)) => {
+                return Some(quote_spanned! {field.span() => {
+                    egui_inspect::InspectNumber::inspect_with_drag_value(&mut self.#name, &#name_str, ui, #mi, #ma);
+                    }
+                });
+            }
+            _ => {
+                return Some(quote_spanned! {field.span() => {
+                    self.#name.inspect_mut(&#name_str, ui);
+                    }
+                });
+            }
+        }
+    }
+
+    let min = min.unwrap_or(0.0);
+    let max = max.unwrap_or(100.0);
+
     if mutable && log_slider {
         return Some(quote_spanned! {field.span() => {
         // egui_inspect::InspectNumber::inspect_with_log_slider(&mut self.#name, &#name_str, ui, #min, #max);
@@ -89,12 +108,6 @@ fn handle_number_path(
         return Some(quote_spanned! {field.span() => {
         // egui_inspect::InspectNumber::inspect_with_slider(&mut self.#name, &#name_str, ui, #min, #max);
         #base.inspect_with_slider(&#name_str, ui, #min, #max);
-            }
-        });
-    }
-    if mutable && !slider {
-        return Some(quote_spanned! {field.span() => {
-            egui_inspect::InspectNumber::inspect_with_drag_value(&mut self.#name, &#name_str, ui);
             }
         });
     }

@@ -25,9 +25,9 @@ struct FieldAttr {
     /// Use logarithmic slider function for numbers
     log_slider: bool,
     /// Min value for numbers
-    min: f32,
+    min: Option<f32>,
     /// Max value for numbers
-    max: f32,
+    max: Option<f32>,
     /// Display mut text on multiple line
     multiline: bool,
     /// Use custom function for non-mut inspect
@@ -42,10 +42,10 @@ impl Default for FieldAttr {
             name: None,
             hide: false,
             no_edit: false,
-            slider: true,
+            slider: false,
             log_slider: false,
-            min: 0.0,
-            max: 100.0,
+            min: None,
+            max: None,
             multiline: false,
             custom_func: None,
             custom_func_mut: None,

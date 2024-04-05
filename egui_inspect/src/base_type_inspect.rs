@@ -5,52 +5,12 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use crate::InspectNumber;
 use crate::InspectString;
 use egui::Stroke;
 use egui::Vec2;
 use egui::{Color32, Ui};
 
-macro_rules! impl_inspect_float {
-    ($($t:ty),+) => {
-        $(
-            impl crate::InspectNumber for $t {
-                fn inspect_with_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
-                    ui.horizontal(|ui| {
-                        ui.label(label.to_owned() + ":");
-                        ui.add(egui::Slider::new(self, (min as $t)..=(max as $t)));
-                    });
-                }
-                fn inspect_with_log_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
-                    ui.horizontal(|ui| {
-                        ui.label(label.to_owned() + ":");
-                        ui.add(egui::Slider::new(self, (min as $t)..=(max as $t)).logarithmic(true));
-                    });
-                }
-                fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui) {
-                    ui.horizontal(|ui| {
-                        ui.label(label.to_owned() + ":");
-                        ui.add(egui::DragValue::new(self));
-                    });
-                }
-            }
-
-            impl crate::EguiInspect for $t {
-                fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-                    ui.horizontal(|ui| {
-                        ui.label(label.to_owned() + ":");
-                        ui.label(self.to_string());
-                    });
-                }
-                fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-                    self.inspect_with_slider(label, ui, 0.0f32, 100.0f32);
-                }
-            }
-        )*
-    }
-}
-
-macro_rules! impl_inspect_int {
+macro_rules! impl_inspect_num {
     ($($t:ty),+) => {
         $(
         impl crate::InspectNumber for $t {
@@ -66,10 +26,10 @@ macro_rules! impl_inspect_int {
                     ui.add(egui::Slider::new(self, (min as $t)..=(max as $t)).logarithmic(true));
                 });
             }
-            fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui) {
+            fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
                 ui.horizontal(|ui| {
                     ui.label(label.to_owned() + ":");
-                    ui.add(egui::DragValue::new(self));
+                    ui.add(egui::DragValue::new(self).clamp_range((min as $t)..=(max as $t)));
                 });
             }
         }
@@ -82,20 +42,17 @@ macro_rules! impl_inspect_int {
                 });
             }
             fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-                self.inspect_with_slider(label, ui, 0.0, 100.0);
+                ui.horizontal(|ui| {
+                    ui.label(label.to_owned() + ":");
+                    ui.add(egui::DragValue::new(self));
+                });
             }
         }
         )*
     }
 }
 
-impl_inspect_float!(f32, f64);
-
-impl_inspect_int!(i8, u8);
-impl_inspect_int!(i16, u16);
-impl_inspect_int!(i32, u32);
-impl_inspect_int!(i64, u64);
-impl_inspect_int!(isize, usize);
+impl_inspect_num!(f32, f64, i8, u8, i16, u16, i32, u32, i64, u64, isize, usize);
 
 impl crate::EguiInspect for &'static str {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
@@ -371,8 +328,8 @@ impl crate::EguiInspect for Vec2 {
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             ui.label(label);
-            self.x.inspect_with_drag_value("x", ui);
-            self.y.inspect_with_drag_value("y", ui);
+            self.x.inspect_mut("x", ui);
+            self.y.inspect_mut("y", ui);
         });
     }
 }
