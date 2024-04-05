@@ -18,6 +18,6 @@ path = "src/showcase.rs"
 [dependencies]
 egui_inspect = { path = "../egui_inspect" }
 egui_inspect_wrap = { path = "../egui_inspect_wrap" }
-eframe = "0.26"
-egui = "0.26"
-egui_plot = "0.26"
+eframe = "0.27"
+egui = "0.27"
+egui_plot = "0.27"

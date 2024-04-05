@@ -8,6 +8,7 @@ use std::sync::Mutex;
 use crate::InspectNumber;
 use crate::InspectString;
 use egui::Stroke;
+use egui::Vec2;
 use egui::{Color32, Ui};
 
 macro_rules! impl_inspect_float {
@@ -305,31 +306,6 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
     }
 }
 
-//// Egui style types
-
-impl crate::EguiInspect for Color32 {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        ui.label(format!("{label}: {:?}", self));
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(label);
-            ui.color_edit_button_srgba(self);
-        });
-    }
-}
-
-impl crate::EguiInspect for Stroke {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        ui.label(format!("{label}: {:?}", self));
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        egui::stroke_ui(ui, self, label);
-    }
-}
-
 impl<T: crate::EguiInspect> crate::EguiInspect for Arc<Mutex<T>> {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         if let Ok(guard) = self.try_lock() {
@@ -355,5 +331,48 @@ impl<T: crate::EguiInspect> crate::EguiInspect for Rc<RefCell<T>> {
         if let Ok(mut guard) = self.try_borrow_mut() {
             guard.inspect_mut(label, ui);
         }
+    }
+}
+
+//// Egui style types
+
+impl crate::EguiInspect for Color32 {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.label(format!("{label}: {:?}", self));
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label(label);
+            ui.color_edit_button_srgba(self);
+        });
+    }
+}
+
+impl crate::EguiInspect for Stroke {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.label(format!("{label}: {:?}", self));
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        egui::stroke_ui(ui, self, label);
+    }
+}
+
+impl crate::EguiInspect for Vec2 {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label(label);
+            self.x.inspect("x", ui);
+            self.y.inspect("y", ui);
+        });
+    }
+
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label(label);
+            self.x.inspect_with_drag_value("x", ui);
+            self.y.inspect_with_drag_value("y", ui);
+        });
     }
 }

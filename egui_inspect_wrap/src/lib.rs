@@ -4,7 +4,7 @@
 use egui::{
     epaint::Shadow,
     style::{Selection, WidgetVisuals, Widgets},
-    Color32, Rounding, Stroke, Visuals,
+    Color32, Rounding, Stroke, Vec2, Visuals,
 };
 use egui_inspect::EguiInspect;
 
@@ -74,7 +74,7 @@ macro_rules! shadow_struct_w_default {
 }
 
 shadow_struct!(Rounding, RoundingUi, nw: f32, ne: f32, sw: f32, se: f32);
-shadow_struct!(Shadow, ShadowUi, extrusion: f32, color: Color32);
+shadow_struct!(Shadow, ShadowUi, offset: Vec2, blur:f32, spread:f32, color: Color32);
 shadow_struct!(Selection, SelectionUi, bg_fill: Color32, stroke: Stroke);
 shadow_struct!(WidgetVisuals, WidgetVisualsUi, bg_fill: Color32, weak_bg_fill: Color32, bg_stroke: Stroke, rounding: RoundingUi, fg_stroke: Stroke, expansion: f32);
 shadow_struct!(Widgets, WidgetsUi, noninteractive: WidgetVisualsUi, inactive: WidgetVisualsUi, hovered: WidgetVisualsUi, active: WidgetVisualsUi, open: WidgetVisualsUi);
