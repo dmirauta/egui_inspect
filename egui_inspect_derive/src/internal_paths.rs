@@ -77,7 +77,7 @@ fn handle_number_path(
         quote!(self.#name)
     };
 
-    if mutable && !slider {
+    if mutable && !slider && !log_slider {
         match (min, max) {
             (Some(mi), Some(ma)) => {
                 return Some(quote_spanned! {field.span() => {
