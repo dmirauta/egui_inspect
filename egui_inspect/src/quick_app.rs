@@ -1,8 +1,14 @@
+use std::any::type_name;
+
 use crate::EguiInspect;
 
 pub trait IntoApp: Default {
     fn name() -> &'static str {
-        "Demo"
+        let mut name: &str = type_name::<Self>().into();
+        if let Some(_name) = name.split("::").last() {
+            name = _name;
+        }
+        name
     }
     fn eframe_native_opts() -> eframe::NativeOptions {
         Default::default()
