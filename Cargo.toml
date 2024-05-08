@@ -5,3 +5,5 @@ members = [
     "egui_inspect_derive",
     "egui_inspect_wrap",
 ]
+
+resolver = "2"

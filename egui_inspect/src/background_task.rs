@@ -170,14 +170,12 @@ where
     fn poll_result(&mut self) {
         let mut res = Err(String::new());
         if let BackgroundTask::Ongoing { join_handle, .. } = self {
-            if join_handle.is_some() {
-                if join_handle.as_ref().unwrap().is_finished() {
-                    res = join_handle
-                        .take()
-                        .unwrap() // already checked is_some
-                        .join()
-                        .map_err(|e| format!("{e:?}"));
-                }
+            if join_handle.is_some() && join_handle.as_ref().unwrap().is_finished() {
+                res = join_handle
+                    .take()
+                    .unwrap() // already checked is_some
+                    .join()
+                    .map_err(|e| format!("{e:?}"));
             }
         }
         if let Err(es) = &res {

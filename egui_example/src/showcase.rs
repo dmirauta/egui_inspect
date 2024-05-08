@@ -162,7 +162,7 @@ fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::U
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let MyEnum::VariantWithStructData { a_plot, .. } = &mut self.fancy_enum {
-            a_plot.xy = self.containers.an_ugly_internal_name.clone();
+            a_plot.xy.clone_from(&self.containers.an_ugly_internal_name);
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {

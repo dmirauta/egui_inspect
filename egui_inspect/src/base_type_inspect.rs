@@ -57,7 +57,7 @@ impl_inspect_num!(f32, f64, i8, u8, i16, u16, i32, u32, i64, u64, isize, usize);
 impl crate::EguiInspect for &'static str {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            if label != "" {
+            if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
             ui.label(self.to_string());
@@ -65,7 +65,7 @@ impl crate::EguiInspect for &'static str {
     }
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            if label != "" {
+            if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
             ui.colored_label(Color32::from_rgb(255, 0, 0), self.to_string())
@@ -77,7 +77,7 @@ impl crate::EguiInspect for &'static str {
 impl crate::EguiInspect for String {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            if label != "" {
+            if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
             ui.label(self);
@@ -91,7 +91,7 @@ impl crate::EguiInspect for String {
 impl crate::InspectString for String {
     fn inspect_mut_multiline(&mut self, label: &str, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if label != "" {
+            if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
             ui.text_edit_multiline(self);
@@ -100,7 +100,7 @@ impl crate::InspectString for String {
 
     fn inspect_mut_singleline(&mut self, label: &str, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if label != "" {
+            if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
             ui.text_edit_singleline(self);
@@ -139,7 +139,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 
 impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
     fn inspect(&self, label: &str, ui: &mut Ui) {
-        ui.collapsing(format!("{label}"), |ui| {
+        ui.collapsing(label, |ui| {
             for (i, item) in self.iter().enumerate() {
                 item.inspect(format!("{label}[{i}]").as_str(), ui);
             }
@@ -148,7 +148,7 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
 
     fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
         let n = self.len();
-        ui.collapsing(format!("{label}"), |ui| {
+        ui.collapsing(label, |ui| {
             let mut to_remove = None;
             let mut to_swap = None;
             for (i, item) in self.iter_mut().enumerate() {
@@ -159,10 +159,8 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
                         to_remove = Some(i);
                     }
 
-                    if i < n - 1 {
-                        if ui.button("Swap with next").clicked() {
-                            to_swap = Some(i);
-                        }
+                    if i < n - 1 && ui.button("Swap with next").clicked() {
+                        to_swap = Some(i);
                     }
                 });
             }
@@ -249,13 +247,13 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Option<T> {
                 ui.vertical(|ui| {
                     v.inspect_mut(label, ui);
                 });
-                if ui.button(format!("Set to None").as_str()).clicked() {
+                if ui.button("Set to None").clicked() {
                     *self = None;
                 }
             }
             None => {
                 ui.label(format!("\"{label}\" is None").as_str());
-                if ui.button(format!("Set to default").as_str()).clicked() {
+                if ui.button("Set to default").clicked() {
                     *self = Some(T::default());
                 }
             }
@@ -290,8 +288,6 @@ impl<T: crate::EguiInspect> crate::EguiInspect for Rc<RefCell<T>> {
         }
     }
 }
-
-//// Egui style types
 
 impl crate::EguiInspect for Color32 {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {

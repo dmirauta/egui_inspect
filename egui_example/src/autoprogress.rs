@@ -3,7 +3,7 @@ use std::time::Duration;
 use egui_inspect::{
     background_task::{BackgroundTask, Progress, Task},
     quick_app::{IntoApp, QuickApp},
-    EguiInspect, InspectNumber,
+    EguiInspect,
 };
 
 #[derive(EguiInspect, Clone, PartialEq)]

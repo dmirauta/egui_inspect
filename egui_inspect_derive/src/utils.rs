@@ -13,9 +13,9 @@ pub fn get_path_str(type_path: &Type) -> Option<String> {
             if let Some(name) = ident {
                 return Some(name.to_string());
             }
-            return None;
+            None
         }
-        Reference(type_ref) => get_path_str(&*type_ref.elem),
+        Reference(type_ref) => get_path_str(&type_ref.elem),
         _ => Some("".to_string()),
     }
 }
@@ -35,15 +35,13 @@ pub(crate) fn get_default_function_call(
 
     let base = if loose_field {
         quote!(#name)
+    } else if mutable {
+        quote!(&mut self.#name)
     } else {
-        if mutable {
-            quote!(&mut self.#name)
-        } else {
-            quote!(&self.#name)
-        }
+        quote!(&self.#name)
     };
 
-    return if mutable {
+    if mutable {
         quote_spanned! {field.span() => {
             egui_inspect::EguiInspect::inspect_mut(#base, &#name_str, ui);
             }
@@ -53,5 +51,5 @@ pub(crate) fn get_default_function_call(
             egui_inspect::EguiInspect::inspect(#base, &#name_str, ui);
             }
         }
-    };
+    }
 }

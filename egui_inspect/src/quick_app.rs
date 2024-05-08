@@ -4,7 +4,7 @@ use crate::EguiInspect;
 
 pub trait IntoApp: Default {
     fn name() -> &'static str {
-        let mut name: &str = type_name::<Self>().into();
+        let mut name: &str = type_name::<Self>();
         if let Some(_name) = name.split("::").last() {
             name = _name;
         }

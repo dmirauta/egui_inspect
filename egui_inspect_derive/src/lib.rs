@@ -11,7 +11,7 @@ use darling::{FromDeriveInput, FromField, FromMeta};
 mod internal_paths;
 mod utils;
 
-#[derive(Debug, FromField, FromDeriveInput)]
+#[derive(Debug, FromField, FromDeriveInput, Default)]
 #[darling(attributes(inspect), default)]
 struct FieldAttr {
     /// Name of the field to be displayed on UI labels
@@ -34,23 +34,6 @@ struct FieldAttr {
     custom_func: Option<String>,
     /// Use custom function for mut inspect
     custom_func_mut: Option<String>,
-}
-
-impl Default for FieldAttr {
-    fn default() -> Self {
-        Self {
-            name: None,
-            hide: false,
-            no_edit: false,
-            slider: false,
-            log_slider: false,
-            min: None,
-            max: None,
-            multiline: false,
-            custom_func: None,
-            custom_func_mut: None,
-        }
-    }
 }
 
 #[derive(Clone, Debug, Default, FromField, FromDeriveInput)]
@@ -268,15 +251,15 @@ fn handle_named_field(f: &Field, mutable: bool, loose: bool) -> TokenStream {
 
     let mutable = mutable && !attr.no_edit;
 
-    if let Some(ts) = handle_custom_func(&f, mutable, &attr) {
+    if let Some(ts) = handle_custom_func(f, mutable, &attr) {
         return ts;
     }
 
-    if let Some(ts) = internal_paths::try_handle_internal_path(&f, mutable, &attr, loose) {
+    if let Some(ts) = internal_paths::try_handle_internal_path(f, mutable, &attr, loose) {
         return ts;
     }
 
-    return utils::get_default_function_call(&f, mutable, &attr, loose);
+    utils::get_default_function_call(f, mutable, &attr, loose)
 }
 
 fn handle_named_fields(fields: &FieldsNamed, mutable: bool) -> TokenStream {
@@ -314,25 +297,27 @@ fn handle_custom_func(field: &Field, mutable: bool, attrs: &FieldAttr) -> Option
         None => name.clone().unwrap().to_string(),
     };
 
-    if mutable && !attrs.no_edit && attrs.custom_func_mut.is_some() {
-        let custom_func_mut = attrs.custom_func_mut.as_ref().unwrap();
-        let ident = syn::Path::from_string(custom_func_mut)
-            .expect(format!("Could not find function: {}", custom_func_mut).as_str());
-        return Some(quote_spanned! { field.span() => {
-                #ident(&mut self.#name, &#name_str, ui);
-            }
-        });
+    if let Some(custom_func_mut) = attrs.custom_func_mut.as_ref() {
+        if mutable && !attrs.no_edit  {
+            let ident = syn::Path::from_string(custom_func_mut)
+                .unwrap_or_else(|_| panic!("Could not find function: {}", custom_func_mut));
+            return Some(quote_spanned! { field.span() => {
+                    #ident(&mut self.#name, &#name_str, ui);
+                }
+            });
+        }
     }
 
-    if (!mutable || (mutable && attrs.no_edit)) && attrs.custom_func.is_some() {
-        let custom_func = attrs.custom_func.as_ref().unwrap();
+
+    if let Some(custom_func) = attrs.custom_func.as_ref() {
+        // TODO: Applicable conditions?
         let ident = syn::Path::from_string(custom_func)
-            .expect(format!("Could not find function: {}", custom_func).as_str());
+            .unwrap_or_else(|_| panic!("Could not find function: {}", custom_func));
         return Some(quote_spanned! { field.span() => {
                 #ident(&self.#name, &#name_str, ui);
             }
         });
     }
 
-    return None;
+    None
 }
