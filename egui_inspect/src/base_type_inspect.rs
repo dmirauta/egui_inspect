@@ -29,7 +29,7 @@ macro_rules! impl_inspect_num {
             fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
                 ui.horizontal(|ui| {
                     ui.label(label.to_owned() + ":");
-                    ui.add(egui::DragValue::new(self).clamp_range((min as $t)..=(max as $t)));
+                    ui.add(egui::DragValue::new(self).max_decimals(10).clamp_range((min as $t)..=(max as $t)));
                 });
             }
         }
@@ -44,7 +44,7 @@ macro_rules! impl_inspect_num {
             fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
                 ui.horizontal(|ui| {
                     ui.label(label.to_owned() + ":");
-                    ui.add(egui::DragValue::new(self));
+                    ui.add(egui::DragValue::new(self).max_decimals(10));
                 });
             }
         }
