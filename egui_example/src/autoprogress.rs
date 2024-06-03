@@ -30,7 +30,8 @@ impl Default for ParamPick {
     }
 }
 
-impl Task<usize> for ParamPick {
+impl Task for ParamPick {
+    type Return = usize;
     fn exec_with_expected_steps(&self) -> Option<usize> {
         if self.ready {
             Some(self.iters)
@@ -56,8 +57,8 @@ impl Task<usize> for ParamPick {
 
 #[derive(Default, EguiInspect)]
 pub struct AutoProgressBarTest {
-    background_task_1: BackgroundTask<usize, ParamPick>,
-    background_task_2: BackgroundTask<usize, ParamPick>,
+    background_task_1: BackgroundTask<ParamPick>,
+    background_task_2: BackgroundTask<ParamPick>,
 }
 
 quick_app_from!(AutoProgressBarTest);

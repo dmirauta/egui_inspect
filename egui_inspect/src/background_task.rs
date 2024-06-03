@@ -54,28 +54,27 @@ impl EguiInspect for SynchedStats {
 
 pub type Progress = Arc<Mutex<SynchedStats>>;
 
-pub trait ProgressFunc<R>: Fn(Progress) -> R + Send + 'static {}
-
-pub trait Task<R>: Default + EguiInspect + Clone + Send + 'static {
+pub trait Task: Default + EguiInspect + Clone + Send + 'static {
+    type Return;
     fn exec_with_expected_steps(&self) -> Option<usize>;
-    fn on_exec(&mut self, progress: Progress) -> R;
+    fn on_exec(&mut self, progress: Progress) -> Self::Return;
 }
 
-pub enum BackgroundTask<R, T: Task<R>> {
+pub enum BackgroundTask<T: Task> {
     Starting {
         task: T,
     },
     Ongoing {
         progress: Progress,
-        join_handle: Option<JoinHandle<R>>,
+        join_handle: Option<JoinHandle<T::Return>>,
     },
     Finished {
-        result: Result<R, String>,
+        result: Result<T::Return, String>,
         task: T,
     },
 }
 
-impl<R, I: Task<R>> Default for BackgroundTask<R, I> {
+impl<T: Task> Default for BackgroundTask<T> {
     fn default() -> Self {
         Self::Starting {
             task: Default::default(),
@@ -83,10 +82,9 @@ impl<R, I: Task<R>> Default for BackgroundTask<R, I> {
     }
 }
 
-impl<R, T> EguiInspect for BackgroundTask<R, T>
+impl<T: Task> EguiInspect for BackgroundTask<T>
 where
-    R: EguiInspect + Send + 'static,
-    T: Task<R>,
+    T::Return: EguiInspect + Send + 'static,
 {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         match self {
@@ -140,10 +138,9 @@ where
     }
 }
 
-impl<R, T> BackgroundTask<R, T>
+impl<T: Task> BackgroundTask<T>
 where
-    R: Send + 'static,
-    T: Task<R>,
+    T::Return: Send,
 {
     pub fn spawn(expected_steps: usize, mut task: T) -> Self {
         let progress = Arc::new(Mutex::new(SynchedStats::new(expected_steps)));
