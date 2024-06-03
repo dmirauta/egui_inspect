@@ -2,8 +2,7 @@ use std::time::Duration;
 
 use egui_inspect::{
     background_task::{BackgroundTask, Progress, Task},
-    quick_app::{IntoApp, QuickApp},
-    EguiInspect,
+    quick_app_from, EguiInspect,
 };
 
 #[derive(EguiInspect, Clone, PartialEq)]
@@ -61,8 +60,4 @@ pub struct AutoProgressBarTest {
     background_task_2: BackgroundTask<usize, ParamPick>,
 }
 
-impl IntoApp for AutoProgressBarTest {}
-
-fn main() -> eframe::Result<()> {
-    QuickApp::<AutoProgressBarTest>::run()
-}
+quick_app_from!(AutoProgressBarTest);

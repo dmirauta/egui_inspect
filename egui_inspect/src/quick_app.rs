@@ -1,23 +1,6 @@
-use std::any::type_name;
-
 use crate::EguiInspect;
 
-pub trait IntoApp: Default {
-    fn name() -> &'static str {
-        let mut name: &str = type_name::<Self>();
-        if let Some(_name) = name.split("::").last() {
-            name = _name;
-        }
-        name
-    }
-    fn eframe_native_opts() -> eframe::NativeOptions {
-        Default::default()
-    }
-    fn create(_cc: &eframe::CreationContext) -> Self {
-        Default::default()
-    }
-}
-
+#[derive(Default)]
 pub struct QuickApp<I: Default> {
     inner: I,
 }
@@ -25,21 +8,34 @@ pub struct QuickApp<I: Default> {
 impl<I: Default + EguiInspect> eframe::App for QuickApp<I> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.inner.inspect_mut("", ui);
+            egui::ScrollArea::both().show(ui, |ui| {
+                self.inner.inspect_mut("", ui);
+            })
         });
     }
 }
 
-impl<I: Default + EguiInspect + IntoApp + 'static> QuickApp<I> {
-    pub fn run() -> eframe::Result<()> {
-        eframe::run_native(
-            I::name(),
-            I::eframe_native_opts(),
-            Box::new(|cc| {
-                Box::new(QuickApp {
-                    inner: I::create(cc),
-                })
-            }),
-        )
-    }
+#[macro_export]
+macro_rules! quick_app_from {
+    ($inspectable: ty) => {
+        quick_app_from!($inspectable, {
+            let mut name: &str = std::any::type_name::<$inspectable>();
+            if let Some(_name) = name.split("::").last() {
+                name = _name;
+            }
+            name
+        });
+    };
+    ($inspectable: ty, $name: expr) => {
+        quick_app_from!($inspectable, $name, Default::default());
+    };
+    ($inspectable: ty, $name: expr, $native_opts: expr) => {
+        fn main() -> eframe::Result<()> {
+            eframe::run_native(
+                $name,
+                $native_opts,
+                Box::new(|_cc| Box::<egui_inspect::quick_app::QuickApp<$inspectable>>::default()),
+            )
+        }
+    };
 }
