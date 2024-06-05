@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use egui_inspect::{
     background_task::{BackgroundTask, Progress, Task},
-    quick_app_from, EguiInspect,
+    EframeMain, EguiInspect,
 };
 
 #[derive(EguiInspect, Clone, PartialEq)]
@@ -12,14 +12,14 @@ enum Mode {
 }
 
 #[derive(EguiInspect, Clone)]
-struct ParamPick {
+struct MySummation {
     iters: usize,
     sleep_millis: u64,
     mode: Mode,
     ready: bool,
 }
 
-impl Default for ParamPick {
+impl Default for MySummation {
     fn default() -> Self {
         Self {
             iters: 100,
@@ -30,21 +30,20 @@ impl Default for ParamPick {
     }
 }
 
-impl Task for ParamPick {
+impl Task for MySummation {
     type Return = usize;
     fn exec_with_expected_steps(&self) -> Option<usize> {
+        // provide an expected number of iterations required if ready to start
         if self.ready {
             Some(self.iters)
         } else {
             None
         }
     }
-    fn on_exec(&mut self, progress: Progress) -> usize {
+    fn on_exec(&mut self, progress: Progress) -> Self::Return {
         (0..self.iters)
             .map(|i| {
-                if let Ok(mut mtx) = progress.lock() {
-                    mtx.tick();
-                }
+                progress.increment();
                 std::thread::sleep(Duration::from_millis(self.sleep_millis));
                 match self.mode {
                     Mode::Ordinary => i,
@@ -55,10 +54,8 @@ impl Task for ParamPick {
     }
 }
 
-#[derive(Default, EguiInspect)]
+#[derive(Default, EguiInspect, EframeMain)]
 pub struct AutoProgressBarTest {
-    background_task_1: BackgroundTask<ParamPick>,
-    background_task_2: BackgroundTask<ParamPick>,
+    background_task_1: BackgroundTask<MySummation>,
+    background_task_2: BackgroundTask<MySummation>,
 }
-
-quick_app_from!(AutoProgressBarTest);

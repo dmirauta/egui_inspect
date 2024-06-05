@@ -11,7 +11,36 @@ use darling::{FromDeriveInput, FromField, FromMeta};
 mod internal_paths;
 mod utils;
 
-#[derive(Debug, FromField, FromDeriveInput, Default)]
+#[derive(Clone, Debug, Default, FromField, FromDeriveInput)]
+#[darling(attributes(eframe_main), default)]
+struct EframeMainAttr {
+    title: Option<String>,
+    options: Option<String>,
+}
+
+/// Generates a simple, boilerplate [eframe::App] and its main,  for structs which already define
+/// how to display themselves through  the [egui_inspect::EguiInspect] trait.
+#[proc_macro_derive(EframeMain, attributes(eframe_main))]
+pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let ident = input.ident.clone();
+    let attr = EframeMainAttr::from_derive_input(&input).unwrap();
+    let title = attr.title.unwrap_or(ident.to_string());
+    let options: TokenStream = attr.options.unwrap_or("Default::default()".to_string()).parse().unwrap();
+
+    quote! {
+        fn main() -> eframe::Result<()> {
+            eframe::run_native(
+                #title,
+                #options,
+                Box::new(|_cc| Box::<egui_inspect::quick_app::QuickApp<#ident>>::default()),
+            )
+        }
+    }
+    .into()
+}
+
+#[derive(Debug, FromField, Default)]
 #[darling(attributes(inspect), default)]
 struct FieldAttr {
     /// Name of the field to be displayed on UI labels
@@ -36,7 +65,7 @@ struct FieldAttr {
     custom_func_mut: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, FromField, FromDeriveInput)]
+#[derive(Clone, Debug, Default, FromDeriveInput)]
 #[darling(attributes(inspect), default)]
 struct DeriveAttr {
     /// Surround in visual border
@@ -46,6 +75,7 @@ struct DeriveAttr {
     on_hover_text: Option<String>,
 }
 
+/// Generate [egui_inspect::EguiInspect] impl recursively, based on field impls.
 #[proc_macro_derive(EguiInspect, attributes(inspect))]
 pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

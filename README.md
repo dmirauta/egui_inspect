@@ -4,7 +4,9 @@ This is a fork of [egui_inspect](https://github.com/Meisterlama/egui_inspect).
 
 Seeks to derive a graphical interface mostly from some light annotations on the structs we wish to expose.
 
-![background_task](resources/background.png)
+Source code                              |  Result
+:---------------------------------------:|:-------------------------:
+![](resources/auto_progress_source.png)  |  ![](resources/progress_bars.gif)
 
 For further options see `egui_example/src/showcase.rs`.
 

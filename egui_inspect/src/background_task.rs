@@ -52,7 +52,16 @@ impl EguiInspect for SynchedStats {
     }
 }
 
-pub type Progress = Arc<Mutex<SynchedStats>>;
+#[derive(Clone)]
+pub struct Progress(Arc<Mutex<SynchedStats>>);
+
+impl Progress {
+    pub fn increment(&self) {
+        if let Ok(mut mtx) = self.0.lock() {
+            mtx.tick();
+        }
+    }
+}
 
 pub trait Task: Default + EguiInspect + Clone + Send + 'static {
     type Return;
@@ -60,6 +69,10 @@ pub trait Task: Default + EguiInspect + Clone + Send + 'static {
     fn on_exec(&mut self, progress: Progress) -> Self::Return;
 }
 
+/// A struct which allows for easily running a task in the background while tracking its progress
+/// in an egui ui. In the starting state it exposes the initialisation parameters for its
+/// associated task, in the running/ongoing state it shows a progress bar, and in the finished
+/// state it displays the result object and offers to restart.
 pub enum BackgroundTask<T: Task> {
     Starting {
         task: T,
@@ -91,7 +104,7 @@ where
             BackgroundTask::Starting { .. } => {
                 ui.label("Innactive task.");
             }
-            BackgroundTask::Ongoing { progress, .. } => progress.inspect(label, ui),
+            BackgroundTask::Ongoing { progress, .. } => progress.0.inspect(label, ui),
             BackgroundTask::Finished { result, .. } => match result {
                 Ok(r) => {
                     r.inspect(format!("{label} result").as_str(), ui);
@@ -110,7 +123,7 @@ where
                 poll_ready = true;
             }
             BackgroundTask::Ongoing { progress, .. } => {
-                progress.inspect(label, ui);
+                progress.0.inspect(label, ui);
                 poll_res = true;
             }
             BackgroundTask::Finished { result, task } => {
@@ -143,7 +156,7 @@ where
     T::Return: Send,
 {
     pub fn spawn(expected_steps: usize, mut task: T) -> Self {
-        let progress = Arc::new(Mutex::new(SynchedStats::new(expected_steps)));
+        let progress = Progress(Arc::new(Mutex::new(SynchedStats::new(expected_steps))));
         let _progress = progress.clone();
         let join_handle = std::thread::spawn(move || task.on_exec(_progress));
         Self::Ongoing {
