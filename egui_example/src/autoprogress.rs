@@ -2,13 +2,16 @@ use std::time::Duration;
 
 use egui_inspect::{
     background_task::{BackgroundTask, Progress, Task},
-    EframeMain, EguiInspect,
+    EframeMain, EguiInspect, InspectNumber, DPEQ,
 };
 
-#[derive(EguiInspect, Clone, PartialEq)]
+#[derive(EguiInspect, Clone, DPEQ)]
 enum Mode {
     Ordinary,
-    Squares,
+    Power {
+        #[inspect(slider, min = 2.0, max = 5.0)]
+        p: u32,
+    },
 }
 
 #[derive(EguiInspect, Clone)]
@@ -31,7 +34,7 @@ impl Default for MySummation {
 }
 
 impl Task for MySummation {
-    type Return = usize;
+    type Return = u32;
     fn exec_with_expected_steps(&self) -> Option<usize> {
         // provide an expected number of iterations required if ready to start
         if self.ready {
@@ -41,13 +44,13 @@ impl Task for MySummation {
         }
     }
     fn on_exec(&mut self, progress: Progress) -> Self::Return {
-        (0..self.iters)
+        (0..self.iters as u32)
             .map(|i| {
                 progress.increment();
                 std::thread::sleep(Duration::from_millis(self.sleep_millis));
                 match self.mode {
                     Mode::Ordinary => i,
-                    Mode::Squares => i * i,
+                    Mode::Power { p } => i.pow(p),
                 }
             })
             .sum()

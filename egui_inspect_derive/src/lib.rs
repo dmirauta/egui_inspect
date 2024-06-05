@@ -40,6 +40,23 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     .into()
 }
 
+/// Derives a impl for PartialEq that only considers an enums discriminant (variants) for
+/// EguiInspect derivation (dropdowns) for enums.
+#[proc_macro_derive(DPEQ, attributes(__dpeq__))]
+pub fn derive_dpeq(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let ident = input.ident.clone();
+
+    quote! {
+        impl PartialEq for #ident {
+            fn eq(&self, other: &Self) -> bool {
+                core::mem::discriminant(self) == core::mem::discriminant(other)
+            }
+        }
+    }
+    .into()
+}
+
 #[derive(Debug, FromField, Default)]
 #[darling(attributes(inspect), default)]
 struct FieldAttr {

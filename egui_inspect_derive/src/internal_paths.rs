@@ -79,13 +79,13 @@ fn handle_number_path(
         match (min, max) {
             (Some(mi), Some(ma)) => {
                 return Some(quote_spanned! {field.span() => {
-                    egui_inspect::InspectNumber::inspect_with_drag_value(&mut self.#name, &#name_str, ui, #mi, #ma);
+                    egui_inspect::InspectNumber::inspect_with_drag_value(&mut #base, &#name_str, ui, #mi, #ma);
                     }
                 });
             }
             _ => {
                 return Some(quote_spanned! {field.span() => {
-                    self.#name.inspect_mut(&#name_str, ui);
+                    #base.inspect_mut(&#name_str, ui);
                     }
                 });
             }
