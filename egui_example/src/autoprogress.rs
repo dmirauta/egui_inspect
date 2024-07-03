@@ -15,7 +15,7 @@ enum Mode {
     },
 }
 
-#[derive(EguiInspect, Clone, better_default::Default)]
+#[derive(EguiInspect, better_default::Default)]
 struct MySummation {
     #[default(100)]
     iters: usize,

@@ -1,4 +1,5 @@
 use std::{
+    mem,
     sync::{Arc, Mutex},
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -63,7 +64,7 @@ impl Progress {
     }
 }
 
-pub trait Task: Default + EguiInspect + Clone + Send + 'static {
+pub trait Task: Default + EguiInspect + Send + 'static {
     type Return;
     fn exec_with_expected_steps(&self) -> Option<usize>;
     fn on_exec(&mut self, progress: Progress) -> Self::Return;
@@ -85,6 +86,7 @@ pub enum BackgroundTask<T: Task> {
         result: Result<T::Return, String>,
         task: T,
     },
+    Restarting,
 }
 
 impl<T: Task> Default for BackgroundTask<T> {
@@ -104,6 +106,9 @@ where
             BackgroundTask::Starting { .. } => {
                 ui.label("Innactive task.");
             }
+            BackgroundTask::Restarting { .. } => {
+                ui.label("Restarting...");
+            }
             BackgroundTask::Ongoing { progress, .. } => progress.0.inspect(label, ui),
             BackgroundTask::Finished { result, .. } => match result {
                 Ok(r) => {
@@ -119,6 +124,9 @@ where
             BackgroundTask::Starting { task } => {
                 task.inspect_mut(format!("{label} init parameters").as_str(), ui);
                 self.poll_ready();
+            }
+            BackgroundTask::Restarting { .. } => {
+                ui.label("Restarting...");
             }
             BackgroundTask::Ongoing { progress, .. } => {
                 progress.0.inspect(label, ui);
@@ -156,16 +164,18 @@ where
         }
     }
     fn poll_ready(&mut self) {
-        let task = match self {
-            BackgroundTask::Starting { task } => Some(task),
-            BackgroundTask::Finished { task, .. } => Some(task),
+        let expected_steps = match self {
+            BackgroundTask::Starting { task } => task.exec_with_expected_steps(),
+            BackgroundTask::Finished { task, .. } => task.exec_with_expected_steps(),
             _ => None,
         };
-        if let Some(task) = task {
-            if let Some(expected_steps) = task.exec_with_expected_steps() {
-                // TODO: remove clone
-                *self = Self::spawn(expected_steps, task.clone());
-            }
+        if let Some(expected_steps) = expected_steps {
+            match mem::replace(self, BackgroundTask::Restarting) {
+                BackgroundTask::Starting { task } | BackgroundTask::Finished { task, .. } => {
+                    *self = Self::spawn(expected_steps, task);
+                }
+                _ => {}
+            };
         }
     }
     fn poll_result(&mut self) {
