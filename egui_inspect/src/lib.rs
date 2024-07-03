@@ -110,4 +110,3 @@ impl FrameStyle {
 
 pub mod background_task;
 pub mod base_type_inspect;
-pub mod quick_app;

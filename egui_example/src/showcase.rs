@@ -1,9 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
 use egui::{Color32, Stroke, Style};
-use egui_inspect::{EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
+use egui_inspect::{EframeMain, EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
-use eframe::egui;
 use egui_inspect_wrap::VisualsUi;
 use egui_plot::{Line, Plot};
 
@@ -131,8 +130,9 @@ enum MyEnum {
     },
 }
 
-#[derive(EguiInspect, Default)]
+#[derive(EguiInspect, Default, EframeMain)]
 #[inspect(no_border)]
+#[eframe_main(title = "My egui App", init = "MyApp::new()", no_eframe_app_derive)]
 struct MyApp {
     edit_style: bool,
     #[inspect(hide)]
@@ -187,12 +187,4 @@ impl eframe::App for MyApp {
             });
         });
     }
-}
-
-fn main() -> eframe::Result<()> {
-    eframe::run_native(
-        "My egui App",
-        Default::default(),
-        Box::new(|_cc| Ok(Box::new(MyApp::new()))),
-    )
 }
