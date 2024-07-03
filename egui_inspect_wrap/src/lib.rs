@@ -3,7 +3,7 @@
 
 use egui::{
     epaint::Shadow,
-    style::{Selection, WidgetVisuals, Widgets},
+    style::{Selection, TextCursorStyle, WidgetVisuals, Widgets},
     Color32, Rounding, Stroke, Vec2, Visuals,
 };
 use egui_inspect::EguiInspect;
@@ -78,6 +78,7 @@ shadow_struct!(Shadow, ShadowUi, offset: Vec2, blur:f32, spread:f32, color: Colo
 shadow_struct!(Selection, SelectionUi, bg_fill: Color32, stroke: Stroke);
 shadow_struct!(WidgetVisuals, WidgetVisualsUi, bg_fill: Color32, weak_bg_fill: Color32, bg_stroke: Stroke, rounding: RoundingUi, fg_stroke: Stroke, expansion: f32);
 shadow_struct!(Widgets, WidgetsUi, noninteractive: WidgetVisualsUi, inactive: WidgetVisualsUi, hovered: WidgetVisualsUi, active: WidgetVisualsUi, open: WidgetVisualsUi);
+shadow_struct!(TextCursorStyle, TextCursorStyleUi, stroke: Stroke, preview: bool, blink:bool, on_duration: f32, off_duration: f32);
 
 // VisualsUi wraps around [`egui::Visuals`]
 shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
@@ -98,8 +99,7 @@ shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
     panel_fill: Color32,
     popup_shadow: ShadowUi,
     resize_corner_size: f32,
-    text_cursor: Stroke,
-    text_cursor_preview: bool,
+    text_cursor: TextCursorStyleUi,
     clip_rect_margin: f32,
     button_frame: bool,
     collapsing_header_frame: bool,
@@ -107,3 +107,7 @@ shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
     striped: bool,
     slider_trailing_fill: bool,
     image_loading_spinners: bool);
+
+// TODO: support shadowing enums for the following fields:
+//  interact_cursor: Option<CursorIcon>,
+//  numeric_color_space: NumericColorSpace,

@@ -115,16 +115,14 @@ where
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        let mut poll_ready = false;
-        let mut poll_res = false;
         match self {
             BackgroundTask::Starting { task } => {
                 task.inspect_mut(format!("{label} init parameters").as_str(), ui);
-                poll_ready = true;
+                self.poll_ready();
             }
             BackgroundTask::Ongoing { progress, .. } => {
                 progress.0.inspect(label, ui);
-                poll_res = true;
+                self.poll_result();
             }
             BackgroundTask::Finished { result, task } => {
                 match result {
@@ -138,15 +136,8 @@ where
                     format!("{label} init parameters (start again)").as_str(),
                     ui,
                 );
-                poll_ready = true;
+                self.poll_ready();
             }
-        }
-        // state transitions
-        if poll_ready {
-            self.poll_ready();
-        }
-        if poll_res {
-            self.poll_result();
         }
     }
 }

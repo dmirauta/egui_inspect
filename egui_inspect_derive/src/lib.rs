@@ -16,6 +16,7 @@ mod utils;
 struct EframeMainAttr {
     title: Option<String>,
     options: Option<String>,
+    init: Option<String>,
 }
 
 /// Generates a simple, boilerplate [eframe::App] and its main,  for structs which already define
@@ -26,14 +27,16 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     let ident = input.ident.clone();
     let attr = EframeMainAttr::from_derive_input(&input).unwrap();
     let title = attr.title.unwrap_or(ident.to_string());
+    // TODO: Accept expressions/tokens rather than strings
     let options: TokenStream = attr.options.unwrap_or("Default::default()".to_string()).parse().unwrap();
+    let init: TokenStream = attr.init.unwrap_or(format!("{ident}::default()")).parse().unwrap();
 
     quote! {
         fn main() -> eframe::Result<()> {
             eframe::run_native(
                 #title,
                 #options,
-                Box::new(|_cc| Box::<egui_inspect::quick_app::QuickApp<#ident>>::default()),
+                Box::new(|_cc| Ok(Box::new(egui_inspect::quick_app::QuickApp {inner: #init}))),
             )
         }
     }

@@ -5,8 +5,9 @@ use egui_inspect::{
     EframeMain, EguiInspect, InspectNumber, DPEQ,
 };
 
-#[derive(EguiInspect, Clone, DPEQ)]
+#[derive(EguiInspect, Clone, DPEQ, Default)]
 enum Mode {
+    #[default]
     Ordinary,
     Power {
         #[inspect(slider, min = 2.0, max = 5.0)]
@@ -14,34 +15,21 @@ enum Mode {
     },
 }
 
-#[derive(EguiInspect, Clone)]
+#[derive(EguiInspect, Clone, better_default::Default)]
 struct MySummation {
+    #[default(100)]
     iters: usize,
+    #[default(25)]
     sleep_millis: u64,
     mode: Mode,
     ready: bool,
 }
 
-impl Default for MySummation {
-    fn default() -> Self {
-        Self {
-            iters: 100,
-            sleep_millis: 25,
-            mode: Mode::Ordinary,
-            ready: false,
-        }
-    }
-}
-
 impl Task for MySummation {
     type Return = u32;
+    /// provide an expected number of iterations when ready to begin
     fn exec_with_expected_steps(&self) -> Option<usize> {
-        // provide an expected number of iterations required if ready to start
-        if self.ready {
-            Some(self.iters)
-        } else {
-            None
-        }
+        self.ready.then_some(self.iters)
     }
     fn on_exec(&mut self, progress: Progress) -> Self::Return {
         (0..self.iters as u32)
