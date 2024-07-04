@@ -15,10 +15,16 @@ path = "src/autoprogress.rs"
 name = "showcase"
 path = "src/showcase.rs"
 
+[[bin]]
+name = "toml_form_dialogue"
+path = "src/toml_form_dialogue.rs"
+
 [dependencies]
-egui_inspect = { path = "../egui_inspect" }
+egui_inspect = { path = "../egui_inspect", features = ["toml"] }
 egui_inspect_wrap = { path = "../egui_inspect_wrap" }
 egui = "0.28.0"
 eframe = "0.28"
 egui_plot = "0.28"
 better_default = "1.0.5"
+toml = "0.8.14"
+clap = { version = "4.5.8", features = ["derive"] }

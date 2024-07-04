@@ -13,3 +13,9 @@ categories = ["gui"]
 egui_inspect_derive = { path = "../egui_inspect_derive", version = "0.1" }
 egui = "0.28"
 eframe = "0.28"
+toml = { version = "0.8.14", optional = true }
+egui_extras = { version = "0.28.0", features = ["datepicker"], optional = true }
+chrono = { version = "0.4.38", optional = true }
+
+[features]
+toml = ["dep:toml", "dep:egui_extras", "dep:chrono"]

@@ -1,0 +1,14 @@
+bool = false
+date = 1979-05-27
+
+[obj]
+f1 = 2.0
+f2 = "a string"
+
+[obj2]
+num = 3
+arr = [1.0, "another string"]
+
+[obj2.nested]
+str = "even more"
+very_nested = { left = true, right = false }

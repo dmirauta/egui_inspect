@@ -1,14 +1,9 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::InspectString;
-use egui::Stroke;
-use egui::Vec2;
-use egui::{Color32, Ui};
 
 macro_rules! impl_inspect_num {
     ($($t:ty),+) => {
@@ -68,7 +63,7 @@ impl crate::EguiInspect for &'static str {
             if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
             }
-            ui.colored_label(Color32::from_rgb(255, 0, 0), self.to_string())
+            ui.colored_label(egui::Color32::from_rgb(255, 0, 0), self.to_string())
                 .on_hover_text("inspect_mut is not implemented for &'static str");
         });
     }
@@ -89,7 +84,7 @@ impl crate::EguiInspect for String {
 }
 
 impl crate::InspectString for String {
-    fn inspect_mut_multiline(&mut self, label: &str, ui: &mut Ui) {
+    fn inspect_mut_multiline(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
@@ -98,7 +93,7 @@ impl crate::InspectString for String {
         });
     }
 
-    fn inspect_mut_singleline(&mut self, label: &str, ui: &mut Ui) {
+    fn inspect_mut_singleline(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             if !label.is_empty() {
                 ui.label(label.to_owned() + ":");
@@ -118,7 +113,7 @@ impl crate::EguiInspect for bool {
 }
 
 impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
-    fn inspect(&self, label: &str, ui: &mut Ui) {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         let n = self.len();
         ui.collapsing(format!("{label} (len {n})"), |ui| {
             for (i, item) in self.iter().enumerate() {
@@ -127,7 +122,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
         });
     }
 
-    fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         let n = self.len();
         ui.collapsing(format!("{label} (len {n})"), |ui| {
             for (i, item) in self.iter_mut().enumerate() {
@@ -138,7 +133,7 @@ impl<T: crate::EguiInspect, const N: usize> crate::EguiInspect for [T; N] {
 }
 
 impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
-    fn inspect(&self, label: &str, ui: &mut Ui) {
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.collapsing(label, |ui| {
             for (i, item) in self.iter().enumerate() {
                 item.inspect(format!("{label}[{i}]").as_str(), ui);
@@ -146,7 +141,7 @@ impl<T: crate::EguiInspect + Default> crate::EguiInspect for Vec<T> {
         });
     }
 
-    fn inspect_mut(&mut self, label: &str, ui: &mut Ui) {
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         let n = self.len();
         ui.collapsing(label, |ui| {
             let mut to_remove = None;
@@ -286,49 +281,5 @@ impl<T: crate::EguiInspect> crate::EguiInspect for Rc<RefCell<T>> {
         if let Ok(mut guard) = self.try_borrow_mut() {
             guard.inspect_mut(label, ui);
         }
-    }
-}
-
-impl crate::EguiInspect for Color32 {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        ui.label(format!("{label}: {:?}", self));
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(label);
-            ui.color_edit_button_srgba(self);
-        });
-    }
-}
-
-impl crate::EguiInspect for Stroke {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        ui.label(format!("{label}: {:?}", self));
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(format!("{label}: "));
-            ui.add(self);
-        });
-    }
-}
-
-impl crate::EguiInspect for Vec2 {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(label);
-            self.x.inspect("x", ui);
-            self.y.inspect("y", ui);
-        });
-    }
-
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(label);
-            self.x.inspect_mut("x", ui);
-            self.y.inspect_mut("y", ui);
-        });
     }
 }
