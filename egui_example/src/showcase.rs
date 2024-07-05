@@ -105,8 +105,12 @@ struct APlot {
 }
 
 impl EguiInspect for APlot {
-    fn inspect(&self, _label: &str, _ui: &mut egui::Ui) {
-        todo!();
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+        ui.label(label);
+        self.stroke.inspect("stroke", ui);
+        Plot::new(label).height(200.0).show(ui, |pui| {
+            pui.line(Line::new(self.xy.clone()).stroke(self.stroke))
+        });
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
@@ -122,7 +126,7 @@ impl EguiInspect for APlot {
 enum MyEnum {
     #[default]
     PlainVariant,
-    DifferentPlainVariant,
+    UnnamedFieldVariant(usize, String),
     VariantWithStructData {
         #[inspect(name = "Mirroring data in containers.vector, try editing it!")]
         a_plot: APlot,

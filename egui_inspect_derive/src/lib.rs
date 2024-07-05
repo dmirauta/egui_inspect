@@ -1,4 +1,4 @@
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{
@@ -201,18 +201,20 @@ fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: DeriveAt
 fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> TokenStream {
     let variants: Vec<_> = data_enum.variants.iter().collect();
     let name_arms = variants.iter().map(|v| variant_name_arm(v, _struct_name));
+
     let reflect_variant_name = quote!(
         let current_variant = match self {
             #(#name_arms,)*
         };
     );
-    if mutable {
-        let combo_opts = variants.iter().map(|v| variant_combo(v, _struct_name));
-        let inspect_arms = variants
-            .iter()
-            .map(|v| variant_inspect_arm(v, _struct_name));
-        quote!(
-            #reflect_variant_name
+
+    let combo_opts = variants.iter().map(|v| variant_combo(v, _struct_name));
+    let inspect_arms = variants
+        .iter()
+        .map(|v| variant_inspect_arm(v, _struct_name, mutable));
+
+    let variant_or_option = if mutable {
+        quote! {
             ui.horizontal(|ui| {
                 ::egui::ComboBox::new(format!("{self:p}").as_str(), "")
                     .selected_text(current_variant)
@@ -220,17 +222,22 @@ fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> Tok
                         #(#combo_opts;)*
                     });
             });
-            match self {
-                #(#inspect_arms),*
-            };
-        )
+        }
     } else {
-        quote!(
-            #reflect_variant_name
+        quote! {
             ui.label(current_variant);
-            // TODO: readonly held data inspect
-        )
-    }
+        }
+    };
+
+    quote!(
+        #reflect_variant_name
+
+        #variant_or_option
+
+        match self {
+            #(#inspect_arms),*
+        };
+    )
 }
 
 fn variant_name_arm(variant: &Variant, _struct_name: &Ident) -> TokenStream {
@@ -272,7 +279,7 @@ fn variant_combo(variant: &Variant, _struct_name: &Ident) -> TokenStream {
     }
 }
 
-fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident) -> TokenStream {
+fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident, mutable: bool) -> TokenStream {
     let ident = &variant.ident;
     match &variant.fields {
         Fields::Named(fields) => {
@@ -289,11 +296,19 @@ fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident) -> TokenStream {
             let inspect_fields = fields
                 .named
                 .iter()
-                .map(|f| handle_named_field(f, true, true));
+                .map(|f| handle_named_field(f, mutable, true));
             quote!(#_struct_name::#ident { #(#field_idents),* } => { #(#inspect_fields;)* })
         }
-        Fields::Unnamed(_) => {
-            unimplemented!("TODO: unnamed")
+        Fields::Unnamed(fields) => {
+            let field_idents: Vec<_> = (0..fields.unnamed.len()).map(|i| Ident::new(format!("unnamed_{i}").as_str(), Span::call_site())).collect();
+            let inspect_fields = field_idents.iter().map(|id| {
+                if mutable {
+                    quote! {#id.inspect_mut("", ui)}
+                } else {
+                    quote! {#id.inspect("", ui)}
+                }
+            });
+            quote!(#_struct_name::#ident (#(#field_idents),*) => { #(#inspect_fields;)* })
         }
         Fields::Unit => {
             quote!(#_struct_name::#ident => () )

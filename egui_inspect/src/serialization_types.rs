@@ -1,5 +1,5 @@
-// TODO: Use a "shadowing" (egui_inspect_wrap) type to derive this impl when shadowing enums is
-// included, though a plus side of the manual implementation is that the structure is fixed (no
+// NOTE: Could be derived via [egui_inspect_wrap::shadow_struct] once that supports enums,
+// though a plus side of the manual implementation is that the structure is fixed (no
 // array or hashmap/object-field inserting/removing).
 
 use chrono::Datelike;

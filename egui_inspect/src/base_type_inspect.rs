@@ -11,19 +11,25 @@ macro_rules! impl_inspect_num {
         impl crate::InspectNumber for $t {
             fn inspect_with_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
                 ui.horizontal(|ui| {
-                    ui.label(label.to_owned() + ":");
+                    if !label.is_empty() {
+                        ui.label(label.to_owned() + ":");
+                    }
                     ui.add(egui::Slider::new(self, (min as $t)..=(max as $t)));
                 });
             }
             fn inspect_with_log_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
                 ui.horizontal(|ui| {
-                    ui.label(label.to_owned() + ":");
+                    if !label.is_empty() {
+                        ui.label(label.to_owned() + ":");
+                    }
                     ui.add(egui::Slider::new(self, (min as $t)..=(max as $t)).logarithmic(true));
                 });
             }
             fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32) {
                 ui.horizontal(|ui| {
-                    ui.label(label.to_owned() + ":");
+                    if !label.is_empty() {
+                        ui.label(label.to_owned() + ":");
+                    }
                     ui.add(egui::DragValue::new(self).max_decimals(10).range((min as $t)..=(max as $t)));
                 });
             }
@@ -32,13 +38,17 @@ macro_rules! impl_inspect_num {
         impl crate::EguiInspect for $t {
             fn inspect(&self, label: &str, ui: &mut egui::Ui) {
                 ui.horizontal(|ui| {
-                    ui.label(label.to_owned() + ":");
+                    if !label.is_empty() {
+                        ui.label(label.to_owned() + ":");
+                    }
                     ui.label(self.to_string());
                 });
             }
             fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
                 ui.horizontal(|ui| {
-                    ui.label(label.to_owned() + ":");
+                    if !label.is_empty() {
+                        ui.label(label.to_owned() + ":");
+                    }
                     ui.add(egui::DragValue::new(self).max_decimals(10));
                 });
             }
