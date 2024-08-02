@@ -2,8 +2,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{
-    parse_macro_input, parse_quote, Data, DataEnum, DeriveInput, Field, Fields, FieldsNamed,
-    FieldsUnnamed, GenericParam, Generics, Index, Variant,
+    parse_macro_input, parse_quote, Data, DataEnum, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics, Index, Variant
 };
 
 use darling::{FromDeriveInput, FromField, FromMeta};
@@ -111,6 +110,10 @@ struct DeriveAttr {
     collapsible: bool,
     style: Option<String>,
     on_hover_text: Option<String>,
+    trait_debug: bool,
+    /// If a parameter is only used in hidden fields, it does not need to be EguiInspect.
+    no_trait_bound: Option<String>,
+    // TODO: Multiple exempt parameters, ideally automatically detected.
 }
 
 /// Generate [egui_inspect::EguiInspect] impl recursively, based on field impls.
@@ -121,11 +124,14 @@ pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenS
 
     let name = input.ident;
 
-    let generics = add_trait_bounds(input.generics);
+    let mut ignore_list = vec![];
+    if let Some(s) = &attr.no_trait_bound {
+        ignore_list.push(s.as_str());
+    }
+    let generics = add_trait_bounds(input.generics, ignore_list);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let inspect = wrap_in_box_optionally(inspect_data(&input.data, &name, false, attr.clone()), attr.clone());
-
     let inspect_mut = wrap_in_box_optionally(inspect_data(&input.data, &name, true, attr.clone()), attr.clone());
 
     quote! {
@@ -159,33 +165,38 @@ fn wrap_in_box_optionally(inner: TokenStream, attr: DeriveAttr) -> TokenStream {
     }
 }
 
-fn add_trait_bounds(mut generics: Generics) -> Generics {
+fn add_trait_bounds(mut generics: Generics, ignore_list: Vec<&str>) -> Generics {
     for param in &mut generics.params {
-        if let GenericParam::Type(ref mut type_param) = *param {
-            type_param
-                .bounds
-                .push(parse_quote!(egui_inspect::EguiInspect));
+        if let GenericParam::Type(type_param) = param {
+            if !ignore_list.contains(&type_param.ident.to_string().as_str()) {
+                type_param
+                    .bounds
+                    .push(parse_quote!(egui_inspect::EguiInspect));
+            }
         }
     }
     generics
 }
 
 fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: DeriveAttr) -> TokenStream {
-    let t = match *data {
-        Data::Struct(ref data) => handle_fields(&data.fields, mutable),
-        Data::Enum(ref data_enum) => handle_enum(data_enum, _struct_name, mutable),
+    let t = match data {
+        Data::Struct(data) => handle_fields(&data.fields, mutable),
+        Data::Enum(data_enum) => handle_enum(data_enum, _struct_name, mutable),
         Data::Union(_) => unimplemented!("Unions are not yet supported"),
     };
     let t = if attr.collapsible {
-        quote!(ui.collapsing(label, |ui| {
+        quote!(
+            ui.collapsing(label, |ui| {
                 #t
-        });)
+            });
+        )
     } else {
-        quote!( if label!="" {
-                   ui.strong(label);
-                }
-                #t
-              )
+        quote!(
+            if label!="" {
+                ui.strong(label);
+            }
+            #t
+        )
     };
     if let Some(on_hover_text) = attr.on_hover_text {
         quote!(
@@ -346,28 +357,28 @@ fn handle_named_field(f: &Field, mutable: bool, loose: bool) -> TokenStream {
 }
 
 fn handle_named_fields(fields: &FieldsNamed, mutable: bool) -> TokenStream {
-    let recurse = fields
+    let field_inspects = fields
         .named
         .iter()
         .map(|f| handle_named_field(f, mutable, false));
     quote! {
-        #(#recurse)*
+        #(#field_inspects)*
     }
 }
 
 fn handle_unnamed_fields(fields: &FieldsUnnamed, mutable: bool) -> TokenStream {
-    let mut recurse = Vec::new();
+    let mut field_inspects = Vec::new();
     for (i, _) in fields.unnamed.iter().enumerate() {
         let tuple_index = Index::from(i);
         let name = format!("Field {i}");
         let ref_str = if mutable { quote!(&mut) } else { quote!(&) };
-        recurse.push(
+        field_inspects.push(
             quote! { egui_inspect::EguiInspect::inspect(#ref_str self.#tuple_index, #name, ui);},
         );
     }
 
     let result = quote! {
-        #(#recurse)*
+        #(#field_inspects)*
     };
     result
 }
