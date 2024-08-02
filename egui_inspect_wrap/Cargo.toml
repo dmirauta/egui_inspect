@@ -6,5 +6,4 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui_inspect = { path = "../egui_inspect", version = "0.1" }
-egui = "0.28"
+egui_inspect = { path = "../egui_inspect" }

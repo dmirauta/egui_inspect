@@ -35,10 +35,10 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         true => quote!{
         },
         false => quote! {
-            impl eframe::App for #ident {
-                fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-                    egui::CentralPanel::default().show(ctx, |ui| {
-                        egui::ScrollArea::both().show(ui, |ui| {
+            impl egui_inspect::eframe::App for #ident {
+                fn update(&mut self, ctx: &egui_inspect::egui::Context, _frame: &mut egui_inspect::eframe::Frame) {
+                    egui_inspect::egui::CentralPanel::default().show(ctx, |ui| {
+                        egui_inspect::egui::ScrollArea::both().show(ui, |ui| {
                             self.inspect_mut("", ui);
                         })
                     });
@@ -50,8 +50,8 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     quote! {
         #eframe_app_derive
 
-        fn main() -> eframe::Result<()> {
-            eframe::run_native(
+        fn main() -> egui_inspect::eframe::Result<()> {
+            egui_inspect::eframe::run_native(
                 #title,
                 #options,
                 Box::new(|_cc| Ok(Box::new(#init))),
@@ -130,10 +130,10 @@ pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenS
 
     quote! {
         impl #impl_generics egui_inspect::EguiInspect for #name #ty_generics #where_clause {
-            fn inspect(&self, label: &str, ui: &mut egui::Ui) {
+            fn inspect(&self, label: &str, ui: &mut egui_inspect::egui::Ui) {
                 #inspect
             }
-            fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+            fn inspect_mut(&mut self, label: &str, ui: &mut egui_inspect::egui::Ui) {
                 #inspect_mut
             }
         }
@@ -189,7 +189,7 @@ fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: DeriveAt
     };
     if let Some(on_hover_text) = attr.on_hover_text {
         quote!(
-        ::egui::Frame::none()
+        egui_inspect::egui::Frame::none()
              .show(ui, |ui| {
                 #t
             }).response.on_hover_text_at_pointer(#on_hover_text);)
@@ -216,7 +216,7 @@ fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> Tok
     let variant_or_option = if mutable {
         quote! {
             ui.horizontal(|ui| {
-                ::egui::ComboBox::new(format!("{self:p}").as_str(), "")
+                egui_inspect::egui::ComboBox::new(format!("{self:p}").as_str(), "")
                     .selected_text(current_variant)
                     .show_ui(ui, |ui| {
                         #(#combo_opts;)*

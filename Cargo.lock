@@ -1103,8 +1103,6 @@ version = "0.1.0"
 dependencies = [
  "better_default",
  "clap",
- "eframe",
- "egui",
  "egui_inspect",
  "egui_inspect_wrap",
  "egui_plot",
@@ -1168,7 +1166,6 @@ dependencies = [
 name = "egui_inspect_wrap"
 version = "0.1.0"
 dependencies = [
- "egui",
  "egui_inspect",
 ]
 

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use egui::{Color32, Stroke, Style};
+use egui_inspect::egui::{self, Color32, Stroke, Style};
 use egui_inspect::{EframeMain, EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
 use egui_inspect_wrap::VisualsUi;
@@ -164,8 +164,8 @@ impl MyApp {
     }
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+impl egui_inspect::eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut egui_inspect::eframe::Frame) {
         if let MyEnum::VariantWithStructData { a_plot, .. } = &mut self.fancy_enum {
             a_plot.xy.clone_from(&self.containers.an_ugly_internal_name);
         }

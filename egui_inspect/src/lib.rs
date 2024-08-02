@@ -53,6 +53,8 @@
 //! - `custom_func_mut` *(String)*: Use custom function for mut inspect (Evaluate the string as a function path)
 //!
 
+pub use eframe;
+pub use egui;
 use egui::{Frame, Margin, Stroke};
 /// See also [EguiInspect]
 pub use egui_inspect_derive::*;

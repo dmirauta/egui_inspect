@@ -1,7 +1,7 @@
 //! Provides some facilities for wrapping around external types to visualise them, and implements
 //! wrapping for [`egui::Visuals`] to easily preview styling changes live
 
-use egui::{
+use egui_inspect::egui::{
     epaint::Shadow,
     style::{Selection, TextCursorStyle, WidgetVisuals, Widgets},
     Color32, Rounding, Stroke, Vec2, Visuals,

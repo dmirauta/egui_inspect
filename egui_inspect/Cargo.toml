@@ -10,11 +10,11 @@ categories = ["gui"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui_inspect_derive = { path = "../egui_inspect_derive", version = "0.1" }
 egui = "0.28"
 eframe = "0.28"
+egui_extras = { version = "0.28", features = ["datepicker"], optional = true }
+egui_inspect_derive = { path = "../egui_inspect_derive" }
 toml = { version = "0.8.14", optional = true }
-egui_extras = { version = "0.28.0", features = ["datepicker"], optional = true }
 chrono = { version = "0.4.38", optional = true }
 
 [features]

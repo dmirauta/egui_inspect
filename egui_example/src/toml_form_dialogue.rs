@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::Parser;
-use egui_inspect::{EframeMain, EguiInspect};
+use egui_inspect::{egui, EframeMain, EguiInspect};
 
 /// Creates a dialogue with interactible inputs according to an input spec, whose structure
 /// and default values are defined through a toml file, the applied values are printed to stdout,
