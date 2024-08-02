@@ -1,4 +1,5 @@
 use std::{
+    any::type_name,
     mem,
     sync::{Arc, Mutex},
     thread::JoinHandle,
@@ -97,6 +98,14 @@ impl<T: Task> Default for BackgroundTask<T> {
     }
 }
 
+fn type_name_base<T>() -> &'static str {
+    let mut name: &str = type_name::<T>();
+    if let Some(_name) = name.split("::").last() {
+        name = _name;
+    }
+    name
+}
+
 impl<T: Task> EguiInspect for BackgroundTask<T>
 where
     T::Return: EguiInspect + Send + 'static,
@@ -120,9 +129,14 @@ where
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        let mut params_base_label = format!("{} parameters", type_name_base::<T>());
+        if !label.is_empty() {
+            params_base_label += format!(" ({label})").as_str();
+        }
+
         match self {
             BackgroundTask::Starting { task } => {
-                task.inspect_mut(format!("{label} init parameters").as_str(), ui);
+                task.inspect_mut(params_base_label.as_str(), ui);
                 self.poll_ready();
             }
             BackgroundTask::Restarting { .. } => {
@@ -140,10 +154,7 @@ where
                     Err(e) => e.inspect(format!("{label} error").as_str(), ui),
                 }
 
-                task.inspect_mut(
-                    format!("{label} init parameters (start again)").as_str(),
-                    ui,
-                );
+                task.inspect_mut(format!("{params_base_label} (start again)").as_str(), ui);
                 self.poll_ready();
             }
         }
