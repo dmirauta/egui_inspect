@@ -1,12 +1,11 @@
 use std::{
-    any::type_name,
     mem,
     sync::{Arc, Mutex},
     thread::JoinHandle,
     time::{Duration, Instant},
 };
 
-use crate::EguiInspect;
+use crate::{utils::type_name_base, EguiInspect};
 use egui::ProgressBar;
 
 #[derive(Clone)]
@@ -96,14 +95,6 @@ impl<T: Task> Default for BackgroundTask<T> {
             task: Default::default(),
         }
     }
-}
-
-fn type_name_base<T>() -> &'static str {
-    let mut name: &str = type_name::<T>();
-    if let Some(_name) = name.split("::").last() {
-        name = _name;
-    }
-    name
 }
 
 impl<T: Task> EguiInspect for BackgroundTask<T>

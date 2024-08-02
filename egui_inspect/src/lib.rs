@@ -113,5 +113,8 @@ impl FrameStyle {
 pub mod background_task;
 pub mod base_type_inspect;
 pub mod egui_types;
+#[cfg(feature = "logging")]
+pub mod logging;
 #[cfg(feature = "toml")]
 pub mod serialization_types;
+pub mod utils;

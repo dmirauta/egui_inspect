@@ -16,6 +16,9 @@ egui_extras = { version = "0.28", features = ["datepicker"], optional = true }
 egui_inspect_derive = { path = "../egui_inspect_derive" }
 toml = { version = "0.8.14", optional = true }
 chrono = { version = "0.4.38", optional = true }
+log = { version = "0.4.22", optional = true }
+fern = { version = "0.6.2", optional = true }
 
 [features]
 toml = ["dep:toml", "dep:egui_extras", "dep:chrono"]
+logging = ["dep:log", "dep:fern", "dep:chrono"]

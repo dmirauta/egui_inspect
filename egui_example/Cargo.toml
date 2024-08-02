@@ -19,10 +19,15 @@ path = "src/showcase.rs"
 name = "toml_form_dialogue"
 path = "src/toml_form_dialogue.rs"
 
+[[bin]]
+name = "log_test"
+path = "src/log_test.rs"
+
 [dependencies]
-egui_inspect = { path = "../egui_inspect", features = ["toml"] }
+egui_inspect = { path = "../egui_inspect", features = ["toml", "logging"] }
 egui_inspect_wrap = { path = "../egui_inspect_wrap" }
 egui_plot = "0.28"
 better_default = "1.0.5"
 toml = "0.8.14"
 clap = { version = "4.5.8", features = ["derive"] }
+log = "0.4.22"
