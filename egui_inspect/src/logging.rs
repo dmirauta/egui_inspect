@@ -2,6 +2,7 @@ use std::{cell::RefCell, collections::VecDeque, io::stdout, path::PathBuf, time:
 
 use chrono::{DateTime, Local};
 use egui::{Color32, RichText, ScrollArea};
+pub use log;
 use log::info;
 
 use crate::{

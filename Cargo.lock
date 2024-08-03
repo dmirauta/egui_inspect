@@ -1138,7 +1138,6 @@ dependencies = [
  "egui_inspect",
  "egui_inspect_wrap",
  "egui_plot",
- "log",
  "toml",
 ]
 

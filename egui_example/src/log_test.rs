@@ -1,9 +1,12 @@
 use better_default::Default;
 use egui_inspect::{
-    logging::{init_with_mixed_log, LogsView},
+    logging::{
+        init_with_mixed_log,
+        log::{error, info, warn},
+        LogsView,
+    },
     EframeMain, EguiInspect, DPEQ,
 };
-use log::{error, info, warn};
 
 #[derive(EguiInspect, DPEQ, Default)]
 enum BasicLogSeverity {
