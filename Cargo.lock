@@ -994,6 +994,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-getters"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a6433aac097572ea8ccc60b3f2e756c661c9aeed9225cdd4d0cb119cb7ff6ba"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.68",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1177,6 +1188,7 @@ name = "egui_inspect"
 version = "0.1.4"
 dependencies = [
  "chrono",
+ "derive-getters",
  "eframe",
  "egui",
  "egui_extras",

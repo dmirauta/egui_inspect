@@ -18,6 +18,7 @@ toml = { version = "0.8.14", optional = true }
 chrono = { version = "0.4.38", optional = true }
 log = { version = "0.4.22", optional = true }
 fern = { version = "0.6.2", optional = true }
+derive-getters = "0.4.0"
 
 [features]
 toml = ["dep:toml", "dep:egui_extras", "dep:chrono"]

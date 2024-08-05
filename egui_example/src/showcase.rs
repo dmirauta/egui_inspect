@@ -1,12 +1,14 @@
 use std::collections::{BTreeMap, HashMap};
 
 use egui_inspect::egui::{self, Color32, Stroke, Style};
+use egui_inspect::search_select::SearchSelection;
 use egui_inspect::{EframeMain, EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
 use egui_inspect_wrap::VisualsUi;
 use egui_plot::{Line, Plot};
 
 #[derive(EguiInspect)]
+#[inspect(collapsible)]
 struct Primitives {
     #[inspect(no_edit)]
     string: String,
@@ -48,11 +50,13 @@ impl Default for Primitives {
 }
 
 #[derive(EguiInspect)]
+#[inspect(collapsible)]
 struct Containers {
     #[inspect(name = "vector")]
     an_ugly_internal_name: Vec<[f64; 2]>,
     string_map: HashMap<String, Custom>,
     ordered_string_map: BTreeMap<String, u32>,
+    a_wrapped_searchable_vec: SearchSelection<Custom>,
 }
 
 impl Default for Containers {
@@ -74,10 +78,19 @@ impl Default for Containers {
         .map(|(i, key)| (key, (i as u32) * 5))
         .collect();
 
+        let an_ugly_internal_name = vec![[1.0, 28.0], [2.0, 15.0], [4.0, 20.0], [8.0, 3.0]];
+        let a_wrapped_searchable_vec: Vec<_> = an_ugly_internal_name
+            .iter()
+            .map(|[i, j]| Custom(*i as i32, *j as f32))
+            .collect();
+
         Self {
-            an_ugly_internal_name: vec![[1.0, 28.0], [2.0, 15.0], [4.0, 20.0], [8.0, 3.0]],
+            an_ugly_internal_name,
             string_map,
             ordered_string_map,
+            a_wrapped_searchable_vec: SearchSelection::new(a_wrapped_searchable_vec, |c| {
+                format!("{c:?}")
+            }),
         }
     }
 }
@@ -90,7 +103,7 @@ static CUSTOM_BOX: FrameStyle = FrameStyle {
     ..DEFAULT_FRAME_STYLE
 };
 
-#[derive(EguiInspect, PartialEq, Default)]
+#[derive(EguiInspect, PartialEq, Default, Debug)]
 #[inspect(
     style = "crate::CUSTOM_BOX",
     collapsible,
@@ -123,6 +136,7 @@ impl EguiInspect for APlot {
 }
 
 #[derive(EguiInspect, PartialEq, Default)]
+#[inspect(collapsible)]
 enum MyEnum {
     #[default]
     PlainVariant,

@@ -115,6 +115,7 @@ pub mod base_type_inspect;
 pub mod egui_types;
 #[cfg(feature = "logging")]
 pub mod logging;
+pub mod search_select;
 #[cfg(feature = "toml")]
 pub mod serialization_types;
 pub mod utils;
