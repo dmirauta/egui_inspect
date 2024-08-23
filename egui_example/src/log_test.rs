@@ -23,8 +23,6 @@ struct LogEmitter {
 }
 
 impl EguiInspect for LogEmitter {
-    fn inspect(&self, _label: &str, _ui: &mut egui_inspect::egui::Ui) {}
-
     fn inspect_mut(&mut self, _label: &str, ui: &mut egui_inspect::egui::Ui) {
         ui.separator();
         ui.label("Insert log entries:");

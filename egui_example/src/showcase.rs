@@ -120,18 +120,14 @@ struct APlot {
 impl EguiInspect for APlot {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.label(label);
-        self.stroke.inspect("stroke", ui);
         Plot::new(label).height(200.0).show(ui, |pui| {
             pui.line(Line::new(self.xy.clone()).stroke(self.stroke))
         });
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.label(label);
         self.stroke.inspect_mut("stroke", ui);
-        Plot::new(label).height(200.0).show(ui, |pui| {
-            pui.line(Line::new(self.xy.clone()).stroke(self.stroke))
-        });
+        self.inspect(label, ui);
     }
 }
 

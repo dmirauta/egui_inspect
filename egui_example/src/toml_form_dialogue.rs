@@ -49,10 +49,6 @@ struct TomlFormDialogue {
 }
 
 impl EguiInspect for TomlFormDialogue {
-    fn inspect(&self, _label: &str, _ui: &mut egui::Ui) {
-        todo!()
-    }
-
     fn inspect_mut(&mut self, _label: &str, ui: &mut egui::Ui) {
         if let Some(message) = self.prompt.as_ref() {
             ui.label(message);

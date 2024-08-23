@@ -61,8 +61,11 @@ pub use egui_inspect_derive::*;
 
 /// Base trait to automatically inspect structs
 pub trait EguiInspect {
-    fn inspect(&self, label: &str, ui: &mut egui::Ui);
-    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui);
+    #[allow(unused_variables)]
+    fn inspect(&self, label: &str, ui: &mut egui::Ui) {}
+    fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
+        self.inspect(label, ui);
+    }
 }
 
 pub trait InspectNumber {
