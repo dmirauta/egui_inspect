@@ -108,9 +108,10 @@ struct DeriveAttr {
     /// Surround in visual border
     no_border: bool,
     collapsible: bool,
-    style: Option<String>,
+    /// layout field inspects horizontally rather than vertically
+    horiz: bool,
+    frame_style: Option<String>,
     on_hover_text: Option<String>,
-    trait_debug: bool,
     /// If a parameter is only used in hidden fields, it does not need to be EguiInspect.
     no_trait_bound: Option<String>,
     // TODO: Multiple exempt parameters, ideally automatically detected.
@@ -131,8 +132,8 @@ pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenS
     let generics = add_trait_bounds(input.generics, ignore_list);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let inspect = wrap_in_box_optionally(inspect_data(&input.data, &name, false, attr.clone()), attr.clone());
-    let inspect_mut = wrap_in_box_optionally(inspect_data(&input.data, &name, true, attr.clone()), attr.clone());
+    let inspect = inspect_data(&input.data, &name, false, &attr);
+    let inspect_mut = inspect_data(&input.data, &name, true, &attr);
 
     quote! {
         impl #impl_generics egui_inspect::EguiInspect for #name #ty_generics #where_clause {
@@ -145,24 +146,6 @@ pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenS
         }
     }
     .into()
-}
-
-fn wrap_in_box_optionally(inner: TokenStream, attr: DeriveAttr) -> TokenStream {
-    if attr.no_border {
-        inner
-    } else {
-        let style_path_str = attr
-            .style
-            .unwrap_or("egui_inspect::DEFAULT_FRAME_STYLE".to_string());
-        let style_path: TokenStream = style_path_str.parse().unwrap();
-        quote! {
-            #style_path
-             .to_frame()
-             .show(ui, |ui| {
-                #inner
-            });
-        }
-    }
 }
 
 fn add_trait_bounds(mut generics: Generics, ignore_list: Vec<&str>) -> Generics {
@@ -178,16 +161,17 @@ fn add_trait_bounds(mut generics: Generics, ignore_list: Vec<&str>) -> Generics 
     generics
 }
 
-fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: DeriveAttr) -> TokenStream {
-    let t = match data {
+fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: &DeriveAttr) -> TokenStream {
+    let mut inner = match data {
         Data::Struct(data) => handle_fields(&data.fields, mutable),
         Data::Enum(data_enum) => handle_enum(data_enum, _struct_name, mutable),
         Data::Union(_) => unimplemented!("Unions are not yet supported"),
     };
-    let t = if attr.collapsible {
+
+    inner = if attr.collapsible {
         quote!(
             ui.collapsing(label, |ui| {
-                #t
+                #inner
             });
         )
     } else {
@@ -195,18 +179,44 @@ fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: DeriveAt
             if label!="" {
                 ui.strong(label);
             }
-            #t
+            #inner
         )
     };
-    if let Some(on_hover_text) = attr.on_hover_text {
-        quote!(
-        egui_inspect::egui::Frame::none()
+
+    if !attr.no_border {
+        let style_path_str = attr
+            .frame_style
+            .clone()
+            .unwrap_or("egui_inspect::DEFAULT_FRAME_STYLE".to_string());
+        let style_path: TokenStream = style_path_str.parse().unwrap();
+        inner = quote! {
+            #style_path
+             .to_frame()
              .show(ui, |ui| {
-                #t
-            }).response.on_hover_text_at_pointer(#on_hover_text);)
-    } else {
-        t
+                #inner
+            });
+        }
+    };
+
+    if attr.horiz {
+        inner = quote! {
+            ui.horizontal(|ui|{
+                #inner
+            });
+        }
     }
+
+    // TODO: Avoid double frame? (with border)
+    if let Some(on_hover_text) = attr.on_hover_text.clone() {
+        inner = quote!(
+            egui_inspect::egui::Frame::none()
+                .show(ui, |ui| {
+                   #inner
+                }).response.on_hover_text_at_pointer(#on_hover_text);
+        );
+    }
+
+    inner
 }
 
 fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> TokenStream {

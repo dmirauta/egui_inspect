@@ -105,7 +105,7 @@ static CUSTOM_BOX: FrameStyle = FrameStyle {
 
 #[derive(EguiInspect, PartialEq, Default, Debug)]
 #[inspect(
-    style = "crate::CUSTOM_BOX",
+    frame_style = "crate::CUSTOM_BOX",
     collapsible,
     on_hover_text = "show when hovering"
 )]
