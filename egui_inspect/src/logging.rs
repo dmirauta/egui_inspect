@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::VecDeque, io::stdout, path::PathBuf, time:
 use chrono::{DateTime, Local};
 use egui::{Color32, RichText, ScrollArea};
 pub use log;
-use log::info;
+use log::{info, warn};
 
 use crate::{
     utils::{concat_rich_text, type_name_base},
@@ -131,30 +131,41 @@ pub fn setup_mixed_logger(opt: FileLogOption) {
         .chain(stdout())
         .format(|out, message, record| {
             let ct: DateTime<Local> = SystemTime::now().into();
-            out.finish(format_args!(
-                "[{} {} {}] {message}",
-                ct.format("%H:%M:%S"),
-                record.level(),
-                record.target(),
-            ))
+            let fct = ct.format("%H:%M:%S");
+            let prefix = match record.line() {
+                Some(line) => format!("[{fct} {} {} {line}]", record.level(), record.target()),
+                None => format!("[{fct} {} {}]", record.level(), record.target()),
+            };
+            out.finish(format_args!("{prefix} {message}",))
         });
     let log_path = match opt {
         FileLogOption::FullPath { log_path } => Some(log_path),
         FileLogOption::DefaultTempDir { log_name } => Some(std::env::temp_dir().join(log_name)),
         FileLogOption::NoFileLog => None,
     };
+    let mut file_log_success = true;
     if let Some(log_path) = &log_path {
-        text_loggers = text_loggers.chain(fern::log_file(log_path).unwrap());
+        let file_log = fern::log_file(log_path);
+        if let Ok(file_log) = file_log {
+            text_loggers = text_loggers.chain(file_log);
+        } else {
+            file_log_success = false;
+        }
     }
     let log_builder = fern::Dispatch::new()
         .level(log::LevelFilter::Info)
         .chain(boxed_gui_log)
         .chain(text_loggers);
 
-    log_builder.apply().unwrap();
-
-    if let Some(log_path) = log_path {
-        info!("Writing log messages to {log_path:?}.");
+    match log_builder.apply() {
+        Ok(_) => {
+            if !file_log_success {
+                warn!("Failed to setup logfile.");
+            } else if let Some(log_path) = log_path {
+                info!("Writing log messages to {log_path:?}.");
+            }
+        }
+        Err(e) => eprintln!("Failed to build combined logger: {e}"),
     }
 }
 
