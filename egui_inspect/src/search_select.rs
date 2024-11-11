@@ -16,7 +16,7 @@ pub fn search_ui<'a>(
     ui: &mut egui::Ui,
     search_text: &mut String,
     entries: impl Iterator<Item = &'a String>,
-    on_select: impl FnOnce(usize, &'a String) -> (),
+    on_select: impl FnOnce(usize, &'a String),
 ) {
     search_text.inspect_mut("search for", ui);
     ScrollArea::vertical().max_height(100.0).show(ui, |ui| {
@@ -68,7 +68,7 @@ impl EguiInspect for TextSearch {
     fn inspect(&self, _label: &str, ui: &mut egui::Ui) {
         match &self.selected {
             Some(i) => ui.label(format!("Selection: {}", self.options[*i])),
-            None => ui.label(format!("Selection: <None>")),
+            None => ui.label("Selection: <None>"),
         };
     }
 
@@ -120,7 +120,7 @@ impl<I> SearchSelection<I> {
         &self.items
     }
 
-    pub fn mut_items_with(&mut self, items_mut_fn: impl Fn(&mut Vec<I>) -> ()) {
+    pub fn mut_items_with(&mut self, items_mut_fn: impl Fn(&mut Vec<I>)) {
         items_mut_fn(&mut self.items);
         let old_search = self.search.input.clone();
         self.reset_search_text();
@@ -140,6 +140,6 @@ impl<I> SearchSelection<I> {
 impl<I: Clone> SearchSelection<I> {
     #[allow(dead_code)]
     pub fn get_selected(&self) -> Option<I> {
-        self.get_selected_ref().map(|i| i.clone())
+        self.get_selected_ref().cloned()
     }
 }

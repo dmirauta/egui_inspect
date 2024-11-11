@@ -5,7 +5,7 @@
 //! Basic usage would be
 //! ```
 //! # use egui_inspect::*;
-//! #[derive(EguiInspect)]
+//! #[derive(EguiInspect, Default, EframeMain)]
 //! struct MyApp {
 //!     #[inspect(no_edit)]
 //!     string: String,
@@ -28,11 +28,6 @@
 //! fn custom_bool_inspect(boolean: &mut bool, label: &'static str, ui: &mut egui::Ui) {
 //!    ui.label("C'EST LA GIGA FONCTION CUSTOM WÉ");
 //!    boolean.inspect(label, ui);
-//! }
-//!
-//! fn main() {
-//!     let app = MyApp::default();
-//!     app.inspect("My App", &ui); // here `ui` would be some `&mut egui::Ui`
 //! }
 //! ```
 //!

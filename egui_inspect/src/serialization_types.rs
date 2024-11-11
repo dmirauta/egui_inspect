@@ -50,7 +50,7 @@ impl crate::EguiInspect for toml::Value {
                 });
             }
             toml::Value::Table(tab) => {
-                ui.collapsing(format!("{label}"), |ui| {
+                ui.collapsing(label.to_string(), |ui| {
                     for (key, item) in tab.iter() {
                         item.inspect(key.as_str(), ui);
                     }
@@ -79,7 +79,7 @@ impl crate::EguiInspect for toml::Value {
                 });
             }
             toml::Value::Table(tab) => {
-                ui.collapsing(format!("{label}"), |ui| {
+                ui.collapsing(label.to_string(), |ui| {
                     for (key, item) in tab.iter_mut() {
                         item.inspect_mut(key.as_str(), ui);
                     }
