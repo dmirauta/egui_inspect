@@ -3,42 +3,57 @@ use std::ops::Range;
 use crate as egui_inspect;
 use crate::{utils::concat_rich_text, EguiInspect};
 use derive_getters::Getters;
+use egui::text::LayoutJob;
 use egui::{self, Color32, RichText, ScrollArea};
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 
 fn substring_range(string: &str, substring: &str) -> Option<Range<usize>> {
     let start = string.find(substring);
     start.map(|si| si..si + substring.len())
 }
 
-/// Generic search ui that can be used in a wrapping free context.
-/// Index passed through to on_select will only be usable for ordered data.
-pub fn search_ui<'a>(
-    ui: &mut egui::Ui,
-    search_text: &mut String,
-    entries: impl Iterator<Item = &'a String>,
-    on_select: impl FnOnce(usize, &'a String),
-) {
-    search_text.inspect_mut("search for", ui);
-    ScrollArea::vertical().max_height(100.0).show(ui, |ui| {
-        for (i, entry) in entries.enumerate() {
-            if entry.contains(&*search_text) {
-                let match_range =
-                    substring_range(entry.as_str(), search_text.as_str()).unwrap_or(0..0);
-                let prefix = &entry[..match_range.start];
-                let suffix = &entry[match_range.end..];
-                if ui
-                    .button(concat_rich_text(vec![
-                        RichText::new(prefix).color(Color32::WHITE),
-                        RichText::new(search_text.clone()).color(Color32::GREEN),
-                        RichText::new(suffix).color(Color32::WHITE),
-                    ]))
-                    .clicked()
-                {
-                    return on_select(i, entry);
-                }
-            }
+pub fn non_contiguous_highlight(
+    text: &str,
+    higlight_idxs: &[usize],
+    highlight_color: Color32,
+    text_color: Color32,
+) -> LayoutJob {
+    let rti = text.chars().enumerate().map(|(i, c)| {
+        let rt = RichText::new(c);
+        match higlight_idxs.contains(&i) {
+            true => rt.color(highlight_color),
+            false => rt.color(text_color),
         }
     });
+    concat_rich_text(rti)
+}
+
+pub trait SearchMethod {
+    /// outputs score (how good is this match?) and matched character indices
+    fn match_idxs(search_text: &str, queery_text: &str) -> Option<(i64, Vec<usize>)>;
+}
+
+pub struct BasicSearch;
+
+impl SearchMethod for BasicSearch {
+    fn match_idxs(search_text: &str, queery_text: &str) -> Option<(i64, Vec<usize>)> {
+        substring_range(search_text, queery_text).map(|r| (-(r.start as i64), r.collect()))
+    }
+}
+
+pub struct FuzzySearch;
+
+impl SearchMethod for FuzzySearch {
+    fn match_idxs(search_text: &str, queery_text: &str) -> Option<(i64, Vec<usize>)> {
+        SkimMatcherV2::default().fuzzy_indices(search_text, queery_text)
+    }
+}
+
+pub struct Match {
+    idx: usize,
+    char_idxs: Vec<usize>,
+    score: i64,
 }
 
 /// Wrapper around Vec<String> which also holds persistent [search_ui] related data
@@ -50,16 +65,22 @@ pub struct TextSearch {
     just_clicked: bool,
     #[getter(skip)]
     pub display_selected: bool,
+    #[getter(skip)]
+    pub fuzzy: bool,
+    #[getter(skip)]
+    cache: Vec<Match>,
 }
 
 impl TextSearch {
-    pub fn new(options: impl Into<Vec<String>>) -> Self {
+    pub fn new(options: impl Into<Vec<String>>, fuzzy: bool) -> Self {
         TextSearch {
             options: options.into(),
             input: String::new(),
             selected: None,
             just_clicked: false,
             display_selected: true,
+            fuzzy,
+            cache: vec![],
         }
     }
 }
@@ -77,9 +98,53 @@ impl EguiInspect for TextSearch {
         if self.options.is_empty() {
             ui.label("<no available options>");
         } else {
-            search_ui(ui, &mut self.input, self.options.iter(), |i, _| {
-                self.selected = Some(i);
-                self.just_clicked = true
+            let match_idxs = match self.fuzzy {
+                true => FuzzySearch::match_idxs,
+                false => BasicSearch::match_idxs,
+            };
+            ui.horizontal(|ui| {
+                ui.label("search for:");
+                if ui.text_edit_singleline(&mut self.input).changed() {
+                    self.cache = self
+                        .options
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(idx, entry)| {
+                            match_idxs(entry, &self.input).map(|(score, char_idxs)| Match {
+                                idx,
+                                char_idxs,
+                                score,
+                            })
+                        })
+                        .collect();
+                    self.cache.sort_by_key(|t| t.score);
+                }
+            });
+            if self.input.is_empty() && self.cache.len() != self.options.len() {
+                self.cache = (0..self.options.len())
+                    .map(|idx| Match {
+                        idx,
+                        char_idxs: vec![],
+                        score: 0,
+                    })
+                    .collect();
+            }
+            ScrollArea::vertical().max_height(100.0).show(ui, |ui| {
+                for Match { idx, char_idxs, .. } in self.cache.iter().rev() {
+                    let entry = &self.options[*idx];
+                    if ui
+                        .button(non_contiguous_highlight(
+                            entry,
+                            char_idxs,
+                            Color32::GREEN,
+                            Color32::WHITE,
+                        ))
+                        .clicked()
+                    {
+                        self.selected = Some(*idx);
+                        self.just_clicked = true
+                    }
+                }
             });
             if self.display_selected {
                 self.inspect(label, ui)
@@ -105,7 +170,7 @@ impl<I> SearchSelection<I> {
         let mut new = Self {
             items: items.into(),
             str_from_i: Box::new(str_from_i),
-            search: TextSearch::new(vec![]),
+            search: TextSearch::new(vec![], false),
         };
         new.reset_search_text();
         new
@@ -113,7 +178,7 @@ impl<I> SearchSelection<I> {
 
     pub fn reset_search_text(&mut self) {
         let options = Vec::from_iter(self.items.iter().map(&self.str_from_i));
-        self.search = TextSearch::new(options);
+        self.search = TextSearch::new(options, false);
     }
 
     pub fn items(&self) -> &Vec<I> {
