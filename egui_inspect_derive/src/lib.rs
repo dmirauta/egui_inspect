@@ -13,14 +13,85 @@ mod utils;
 #[derive(Clone, Debug, Default, FromField, FromDeriveInput)]
 #[darling(attributes(eframe_main), default)]
 struct EframeMainAttr {
+    /// The title of the application (defaults to struct name)
     title: Option<String>,
+    /// How to generate `eframe::NativeOptions` (defaults to `NativeOptions::default()`)
     options: Option<String>,
+    /// How to initialise the Application object (defaults to `Self::Default()`)
     init: Option<String>,
+    /// Code to run after the `Self::egui_inspect` call within the generated `Eframe::App::update`
+    post_inspect: Option<String>,
+    /// If false, manually impement the `Eframe::App` trait
     no_eframe_app_derive: bool,
 }
 
+// TODO: run docstring example as test to ensure it does not regress
 /// Generates a simple, boilerplate [eframe::App] and its main,  for structs which already define
 /// how to display themselves through  the [egui_inspect::EguiInspect] trait.
+///
+/// Minimal example:
+/// ```
+/// use egui_inspect::{EguiInspect, EframeMain};
+///
+/// #[derive(Default, EguiInspect, EframeMain)]
+/// #[inspect(no_border)]
+/// #[eframe_main(title = "My Application")]
+/// struct MyApp {}
+/// ```
+/// In this case creating an empty application window.
+///
+/// Longer example:
+/// ```
+///use egui_inspect::{egui, EframeMain, EguiInspect, InspectNumber};
+///
+///#[derive(Default, Debug, EguiInspect)]
+///struct Options {
+///    add_input: bool,
+///    double: bool,
+///}
+///
+///#[derive(Default, Debug, EguiInspect, EframeMain)]
+///#[eframe_main(post_inspect = "self.post_inspect(ui);")]
+///struct ReflectMe {
+///    #[inspect(slider, min = 10.0, max = 20.0)]
+///    input: u16,
+///    #[inspect(hide)]
+///    internal: f32,
+///    #[inspect(name = "Some options")]
+///    options: Options,
+///}
+///
+///impl ReflectMe {
+///    /// Runs after the egui_inspect call that is used by the generated Eframe::App::update
+///    fn post_inspect(&mut self, ui: &mut egui::Ui) {
+///        if ui.button("ready").clicked() {
+///            if self.options.add_input {
+///                self.internal += self.input as f32;
+///            }
+///            if self.options.double {
+///                self.internal *= 2.0;
+///            }
+///            println!("self: {self:?}");
+///        }
+///    }
+///}
+/// ```
+///
+/// The options accepted by `#[eframe_main()]` consist of the fields of:
+/// ```
+///struct EframeMainAttr {
+///    /// The title of the application (defaults to struct name)
+///    title: Option<String>,
+///    /// How to generate `eframe::NativeOptions` (defaults to `NativeOptions::default()`)
+///    options: Option<String>,
+///    /// How to initialise the Application object (defaults to `Self::Default()`)
+///    init: Option<String>,
+///    /// Code to run after the `Self::egui_inspect` call within the generated `Eframe::App::update`
+///    post_inspect: Option<String>,
+    /// If false, manually impement the `Eframe::App` trait
+///    no_eframe_app_derive: bool,
+///}
+///```
 #[proc_macro_derive(EframeMain, attributes(eframe_main))]
 pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -30,6 +101,7 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     // TODO: Accept expressions/tokens rather than strings
     let options: TokenStream = attr.options.unwrap_or("Default::default()".to_string()).parse().unwrap();
     let init: TokenStream = attr.init.unwrap_or(format!("{ident}::default()")).parse().unwrap();
+    let post_inspect: TokenStream = attr.post_inspect.unwrap_or(String::new()).parse().unwrap();
     let eframe_app_derive = match attr.no_eframe_app_derive {
         true => quote!{
         },
@@ -39,6 +111,7 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
                     egui_inspect::egui::CentralPanel::default().show(ctx, |ui| {
                         egui_inspect::egui::ScrollArea::both().show(ui, |ui| {
                             self.inspect_mut("", ui);
+                            #post_inspect
                         })
                     });
                 }
@@ -117,7 +190,72 @@ struct DeriveAttr {
     // TODO: Multiple exempt parameters, ideally automatically detected.
 }
 
+// TODO: keep structs in sync after changes, or just reference them by tag and use jump to
+// definition via an lsp for help?
 /// Generate [egui_inspect::EguiInspect] impl recursively, based on field impls.
+///
+/// Example:
+/// ```
+///use egui_inspect::{egui, EframeMain, EguiInspect, InspectNumber};
+///
+///#[derive(EguiInspect)]
+///struct Options {
+///    add_input: bool,
+///    double: bool,
+///}
+///
+///#[derive(EguiInspect)]
+///#[inspect(collapsible)]
+///struct ReflectMe {
+///    #[inspect(slider, min = 10.0, max = 20.0)]
+///    input: u16,
+///    #[inspect(hide)]
+///    internal: f32,
+///    #[inspect(name = "Some options")]
+///    options: Options,
+///}
+/// ```
+///
+/// The structure may be annotated with options defined by the fields of
+/// ```
+///struct DeriveAttr {
+///    /// Surround in visual border
+///    no_border: bool,
+///    collapsible: bool,
+///    /// layout field inspects horizontally rather than vertically
+///    horiz: bool,
+///    frame_style: Option<String>,
+///    on_hover_text: Option<String>,
+///    /// If a parameter is only used in hidden fields, it does not need to be EguiInspect.
+///    no_trait_bound: Option<String>,
+///}
+/// ```
+///
+/// And its fields by the fields of:
+/// ```
+///struct FieldAttr {
+///    /// Name of the field to be displayed on UI labels
+///    name: Option<String>,
+///    /// Doesn't generate code for the given field
+///    hide: bool,
+///    /// Doesn't call mut function for the given field (May be overridden by other params)
+///    no_edit: bool,
+///    /// Use slider function for numbers
+///    slider: bool,
+///    /// Use logarithmic slider function for numbers
+///    log_slider: bool,
+///    /// Min value for numbers
+///    min: Option<f32>,
+///    /// Max value for numbers
+///    max: Option<f32>,
+///    /// Display mut text on multiple line
+///    multiline: bool,
+///    /// Use custom function for non-mut inspect
+///    custom_func: Option<String>,
+///    /// Use custom function for mut inspect
+///    custom_func_mut: Option<String>,
+///}
+/// ```
 #[proc_macro_derive(EguiInspect, attributes(inspect))]
 pub fn derive_egui_inspect(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
