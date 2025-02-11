@@ -82,16 +82,16 @@ pub struct FrameStyle {
 
 pub static DEFAULT_FRAME_STYLE: FrameStyle = FrameStyle {
     inner_margin: Margin {
-        left: 5.0,
-        right: 5.0,
-        bottom: 5.0,
-        top: 5.0,
+        left: 5,
+        right: 5,
+        bottom: 5,
+        top: 5,
     },
     outer_margin: Margin {
-        left: 1.0,
-        right: 1.0,
-        bottom: 1.5,
-        top: 1.5,
+        left: 1,
+        right: 1,
+        bottom: 1,
+        top: 1,
     },
     stroke: Stroke {
         width: 0.7,
@@ -101,7 +101,7 @@ pub static DEFAULT_FRAME_STYLE: FrameStyle = FrameStyle {
 
 impl FrameStyle {
     pub fn to_frame(&self) -> Frame {
-        Frame::none()
+        Frame::NONE
             .inner_margin(self.inner_margin)
             .outer_margin(self.outer_margin)
             .stroke(self.stroke)

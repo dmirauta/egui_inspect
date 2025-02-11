@@ -4,7 +4,7 @@
 use egui_inspect::egui::{
     epaint::Shadow,
     style::{Selection, TextCursorStyle, WidgetVisuals, Widgets},
-    Color32, Rounding, Stroke, Vec2, Visuals,
+    Color32, CornerRadius, Stroke, Visuals,
 };
 use egui_inspect::EguiInspect;
 
@@ -73,15 +73,16 @@ macro_rules! shadow_struct_w_default {
     };
 }
 
-shadow_struct!(Rounding, RoundingUi, nw: f32, ne: f32, sw: f32, se: f32);
-shadow_struct!(Shadow, ShadowUi, offset: Vec2, blur:f32, spread:f32, color: Color32);
+shadow_struct!(CornerRadius, CornerRadiusUi, nw: u8, ne: u8, sw: u8, se: u8);
+shadow_struct!(Shadow, ShadowUi, offset: [i8;2], blur:u8, spread:u8, color: Color32);
 shadow_struct!(Selection, SelectionUi, bg_fill: Color32, stroke: Stroke);
-shadow_struct!(WidgetVisuals, WidgetVisualsUi, bg_fill: Color32, weak_bg_fill: Color32, bg_stroke: Stroke, rounding: RoundingUi, fg_stroke: Stroke, expansion: f32);
+shadow_struct!(WidgetVisuals, WidgetVisualsUi, bg_fill: Color32, weak_bg_fill: Color32, bg_stroke: Stroke, fg_stroke: Stroke, expansion: f32, corner_radius: CornerRadiusUi);
 shadow_struct!(Widgets, WidgetsUi, noninteractive: WidgetVisualsUi, inactive: WidgetVisualsUi, hovered: WidgetVisualsUi, active: WidgetVisualsUi, open: WidgetVisualsUi);
 shadow_struct!(TextCursorStyle, TextCursorStyleUi, stroke: Stroke, preview: bool, blink:bool, on_duration: f32, off_duration: f32);
 
 // VisualsUi wraps around [`egui::Visuals`]
-shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
+shadow_struct_w_default!(Visuals, VisualsUi, 
+    dark_mode: bool,
     override_text_color: Option<Color32>,
     widgets: WidgetsUi,
     selection: SelectionUi,
@@ -91,11 +92,12 @@ shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
     code_bg_color: Color32,
     warn_fg_color: Color32,
     error_fg_color: Color32,
-    window_rounding: RoundingUi,
+    window_corner_radius: CornerRadiusUi,
     window_shadow: ShadowUi,
     window_fill: Color32,
     window_stroke: Stroke,
-    menu_rounding: RoundingUi,
+    window_highlight_topmost: bool,
+    menu_corner_radius: CornerRadiusUi,
     panel_fill: Color32,
     popup_shadow: ShadowUi,
     resize_corner_size: f32,
@@ -109,5 +111,6 @@ shadow_struct_w_default!(Visuals, VisualsUi, dark_mode: bool,
     image_loading_spinners: bool);
 
 // TODO: support shadowing enums for the following fields:
+// handle_shape: HandleShape
 //  interact_cursor: Option<CursorIcon>,
 //  numeric_color_space: NumericColorSpace,

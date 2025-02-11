@@ -112,12 +112,12 @@ static CUSTOM_BOX: FrameStyle = FrameStyle {
 struct Custom(i32, f32);
 
 #[derive(Default, PartialEq)]
-struct APlot {
+struct MyPlot {
     stroke: Stroke,
     xy: Vec<[f64; 2]>,
 }
 
-impl EguiInspect for APlot {
+impl EguiInspect for MyPlot {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.label(label);
         Plot::new(label).height(200.0).show(ui, |pui| {
@@ -139,7 +139,7 @@ enum MyEnum {
     UnnamedFieldVariant(usize, String),
     VariantWithStructData {
         #[inspect(name = "Mirroring data in containers.vector, try editing it!")]
-        a_plot: APlot,
+        my_plot: MyPlot,
         optional_data: Option<usize>,
     },
 }
@@ -160,7 +160,7 @@ impl MyApp {
     fn new() -> Self {
         Self {
             fancy_enum: MyEnum::VariantWithStructData {
-                a_plot: APlot {
+                my_plot: MyPlot {
                     stroke: Stroke {
                         width: 5.0,
                         color: Color32::from_rgba_unmultiplied(41, 91, 37, 55),
@@ -176,8 +176,10 @@ impl MyApp {
 
 impl egui_inspect::eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut egui_inspect::eframe::Frame) {
-        if let MyEnum::VariantWithStructData { a_plot, .. } = &mut self.fancy_enum {
-            a_plot.xy.clone_from(&self.containers.an_ugly_internal_name);
+        if let MyEnum::VariantWithStructData { my_plot, .. } = &mut self.fancy_enum {
+            my_plot
+                .xy
+                .clone_from(&self.containers.an_ugly_internal_name);
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
