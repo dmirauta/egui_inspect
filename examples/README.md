@@ -23,7 +23,7 @@ cargo r -r --bin showcase
 CLI initialisation through clap.
 
 ```
-cargo r -r --bin toml_form_dialogue -- -p "Dial in the following options:" -i fields.toml
+cargo r -r --bin toml_form_dialogue -- -p "Dial in the following options:" -i example/toml_form_dialogue/fields.toml
 ```
 
 or
