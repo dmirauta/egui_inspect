@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::VecDeque, io::stdout, path::PathBuf, time::SystemTime};
+use std::{cell::RefCell, collections::VecDeque, io::stdout, time::SystemTime};
 
 use chrono::{DateTime, Local};
 use egui::{Color32, RichText, ScrollArea};
@@ -22,7 +22,15 @@ struct GuiLogData {
 
 impl GuiLogData {
     fn push(&mut self, item: RichText) {
-        let creation_time = SystemTime::now();
+        #[allow(unused_assignments)]
+        let mut creation_time = SystemTime::UNIX_EPOCH;
+
+        // TODO: cannot use SystemTime::now() in WASM, is there another time source?
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            creation_time = SystemTime::now();
+        }
+
         if let Some(true) = self
             .items
             .back()
@@ -119,54 +127,90 @@ impl log::Log for GuiLogger {
 }
 
 pub enum FileLogOption {
-    FullPath { log_path: PathBuf },
-    DefaultTempDir { log_name: String },
+    #[cfg(not(target_arch = "wasm32"))]
+    FullPath {
+        log_path: std::path::PathBuf,
+    },
+    #[cfg(not(target_arch = "wasm32"))]
+    DefaultTempDir {
+        log_name: String,
+    },
     NoFileLog,
 }
 
 /// quickstart for logging everywhere
-pub fn setup_mixed_logger(opt: FileLogOption) {
+pub fn setup_mixed_logger_with_extra(opt: FileLogOption, extra: Option<Box<dyn log::Log>>) {
     let boxed_gui_log: Box<dyn log::Log> = Box::new(GuiLogger);
-    let mut text_loggers = fern::Dispatch::new()
-        .chain(stdout())
-        .format(|out, message, record| {
+    let mut text_loggers = fern::Dispatch::new().format(|out, message, record| {
+        #[allow(unused_assignments)]
+        let mut prefix = String::new();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
             let ct: DateTime<Local> = SystemTime::now().into();
             let fct = ct.format("%H:%M:%S");
-            let prefix = match record.line() {
+            prefix = match record.line() {
                 Some(line) => format!("[{fct} {} {} {line}]", record.level(), record.target()),
                 None => format!("[{fct} {} {}]", record.level(), record.target()),
             };
-            out.finish(format_args!("{prefix} {message}",))
-        });
-    let log_path = match opt {
-        FileLogOption::FullPath { log_path } => Some(log_path),
-        FileLogOption::DefaultTempDir { log_name } => Some(std::env::temp_dir().join(log_name)),
-        FileLogOption::NoFileLog => None,
-    };
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            prefix = match record.line() {
+                Some(line) => format!("[{} {} {line}]", record.level(), record.target()),
+                None => format!("[{} {}]", record.level(), record.target()),
+            };
+        }
+
+        out.finish(format_args!("{prefix} {message}",))
+    });
+
     let mut file_log_success = true;
-    if let Some(log_path) = &log_path {
-        let file_log = fern::log_file(log_path);
-        if let Ok(file_log) = file_log {
-            text_loggers = text_loggers.chain(file_log);
-        } else {
-            file_log_success = false;
+    let mut log_path_str: Option<String> = None;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        text_loggers = text_loggers.chain(stdout());
+
+        let log_path = match opt {
+            FileLogOption::FullPath { log_path } => Some(log_path),
+            FileLogOption::DefaultTempDir { log_name } => Some(std::env::temp_dir().join(log_name)),
+            FileLogOption::NoFileLog => None,
+        };
+        if let Some(log_path) = &log_path {
+            log_path_str = Some(log_path.to_str().unwrap().to_string());
+            let file_log = fern::log_file(log_path);
+            if let Ok(file_log) = file_log {
+                text_loggers = text_loggers.chain(file_log);
+            } else {
+                file_log_success = false;
+            }
         }
     }
-    let log_builder = fern::Dispatch::new()
+
+    let mut log_builder = fern::Dispatch::new()
         .level(log::LevelFilter::Info)
         .chain(boxed_gui_log)
         .chain(text_loggers);
+
+    if let Some(logger) = extra {
+        log_builder = log_builder.chain(logger);
+    }
 
     match log_builder.apply() {
         Ok(_) => {
             if !file_log_success {
                 warn!("Failed to setup logfile.");
-            } else if let Some(log_path) = log_path {
+            } else if let Some(log_path) = log_path_str {
                 info!("Writing log messages to {log_path:?}.");
             }
         }
         Err(e) => eprintln!("Failed to build combined logger: {e}"),
     }
+}
+
+pub fn setup_mixed_logger(opt: FileLogOption) {
+    setup_mixed_logger_with_extra(opt, None);
 }
 
 /// Displays a view into the stored GUI logs ([GuiLogData]) when inspected.
@@ -186,8 +230,14 @@ impl EguiInspect for LogsView {
 
 /// attach log initialisation to quick EframeMain app definition
 pub fn init_with_mixed_log<T: Default>() -> T {
+    #[cfg(not(target_arch = "wasm32"))]
     setup_mixed_logger(FileLogOption::DefaultTempDir {
         log_name: format!("{}_log", type_name_base::<T>()),
     });
+    #[cfg(target_arch = "wasm32")]
+    setup_mixed_logger_with_extra(
+        FileLogOption::NoFileLog,
+        Some(Box::new(eframe::WebLogger::new(log::LevelFilter::Debug))),
+    );
     Default::default()
 }

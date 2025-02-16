@@ -10,6 +10,7 @@ use darling::{FromDeriveInput, FromField, FromMeta};
 mod internal_paths;
 mod utils;
 
+// TODO: post_inspect would be more useful as an EguiInspect attribute, or on both?
 #[derive(Clone, Debug, Default, FromField, FromDeriveInput)]
 #[darling(attributes(eframe_main), default)]
 struct EframeMainAttr {
@@ -88,10 +89,26 @@ struct EframeMainAttr {
 ///    init: Option<String>,
 ///    /// Code to run after the `Self::egui_inspect` call within the generated `Eframe::App::update`
 ///    post_inspect: Option<String>,
-    /// If false, manually impement the `Eframe::App` trait
+///    /// If false, manually impement the `Eframe::App` trait
 ///    no_eframe_app_derive: bool,
 ///}
 ///```
+///
+/// When compiling for WASM, one may need to append the following to their Cargo.toml:
+///
+/// ```toml
+/// [target.'cfg(target_arch = "wasm32")'.dependencies]
+/// wasm-bindgen-futures = "0.4"
+///
+/// [profile.release]
+/// opt-level = 2 # fast and small wasm
+///
+/// # Optimize all dependencies even in debug builds:
+/// [profile.dev.package."*"]
+/// opt-level = 2
+/// ```
+///
+/// see https://github.com/emilk/eframe_template for more on this.
 #[proc_macro_derive(EframeMain, attributes(eframe_main))]
 pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -122,6 +139,7 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     quote! {
         #eframe_app_derive
 
+        #[cfg(not(target_arch = "wasm32"))]
         fn main() -> egui_inspect::eframe::Result<()> {
             egui_inspect::eframe::run_native(
                 #title,
@@ -129,6 +147,47 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
                 Box::new(|_cc| Ok(Box::new(#init))),
             )
         }
+
+        #[cfg(target_arch = "wasm32")]
+        fn main() {
+            use wasm_bindgen_futures::wasm_bindgen::JsCast;
+            wasm_bindgen_futures::spawn_local(async {
+                let document = eframe::web_sys::window()
+                    .expect("No window")
+                    .document()
+                    .expect("No document");
+
+                let canvas = document
+                    .get_element_by_id("the_canvas_id")
+                    .expect("Failed to find the_canvas_id")
+                    .dyn_into::<eframe::web_sys::HtmlCanvasElement>()
+                    .expect("the_canvas_id was not a HtmlCanvasElement");
+
+                let start_result = eframe::WebRunner::new()
+                    .start(
+                        canvas,
+                        #options,
+                        Box::new(|_cc| Ok(Box::new(#init))),
+                    )
+                    .await;
+
+                // Remove the loading text and spinner:
+                if let Some(loading_text) = document.get_element_by_id("loading_text") {
+                    match start_result {
+                        Ok(_) => {
+                            loading_text.remove();
+                        }
+                        Err(e) => {
+                            loading_text.set_inner_html(
+                                "<p> The app has crashed. See the developer console for details. </p>",
+                            );
+                            panic!("Failed to start eframe: {e:?}");
+                        }
+                    }
+                }
+            });
+        }
+
     }
     .into()
 }
