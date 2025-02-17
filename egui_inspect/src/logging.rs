@@ -228,8 +228,7 @@ impl EguiInspect for LogsView {
     }
 }
 
-/// attach log initialisation to quick EframeMain app definition
-pub fn init_with_mixed_log<T: Default>() -> T {
+pub fn default_mixed_logger<T>() {
     #[cfg(not(target_arch = "wasm32"))]
     setup_mixed_logger(FileLogOption::DefaultTempDir {
         log_name: format!("{}_log", type_name_base::<T>()),
@@ -239,5 +238,10 @@ pub fn init_with_mixed_log<T: Default>() -> T {
         FileLogOption::NoFileLog,
         Some(Box::new(eframe::WebLogger::new(log::LevelFilter::Debug))),
     );
+}
+
+/// attach log initialisation to quick EframeMain app definition
+pub fn init_with_mixed_log<T: Default>() -> T {
+    default_mixed_logger::<T>();
     Default::default()
 }

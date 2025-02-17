@@ -152,7 +152,7 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         fn main() {
             use wasm_bindgen_futures::wasm_bindgen::JsCast;
             wasm_bindgen_futures::spawn_local(async {
-                let document = eframe::web_sys::window()
+                let document = egui_inspect::eframe::web_sys::window()
                     .expect("No window")
                     .document()
                     .expect("No document");
@@ -160,10 +160,10 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
                 let canvas = document
                     .get_element_by_id("the_canvas_id")
                     .expect("Failed to find the_canvas_id")
-                    .dyn_into::<eframe::web_sys::HtmlCanvasElement>()
+                    .dyn_into::<egui_inspect::eframe::web_sys::HtmlCanvasElement>()
                     .expect("the_canvas_id was not a HtmlCanvasElement");
 
-                let start_result = eframe::WebRunner::new()
+                let start_result = egui_inspect::eframe::WebRunner::new()
                     .start(
                         canvas,
                         #options,
