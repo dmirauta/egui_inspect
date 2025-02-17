@@ -1,0 +1,17 @@
+[package]
+name = "frag_viewport"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+egui_inspect = { path = "../../egui_inspect", features = ["logging"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+
+[profile.release]
+opt-level = 2 # fast and small wasm
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2

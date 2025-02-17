@@ -41,6 +41,13 @@ Quick setup of simultaneous logging to gui, terminal, and file (using fern).
 cargo r -r --bin log_test
 ```
 
+## Frag viewport
+
+A minimal fragment shader viewport example (for native or WASM).
+
+For running on WASM one merely needs to add the `assets` folder and `index.html` file from https://github.com/emilk/eframe_template and simply run `trunk serve` (for testing locally).
+All the other boilerplate has been added to the EframeMain derive and the logging module.
+
 ## Others
 
 - [table_ocr](https://github.com/dmirauta/table_ocr)

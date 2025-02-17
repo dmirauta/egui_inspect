@@ -9,5 +9,4 @@ publish = false
 
 [dependencies]
 egui_inspect = { path = "../../egui_inspect", features = ["logging"] }
-egui_inspect_wrap = { path = "../../egui_inspect_wrap" }
 better_default = "1.0.5"
