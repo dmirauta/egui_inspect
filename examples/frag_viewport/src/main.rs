@@ -6,7 +6,7 @@ use egui_inspect::{
     },
     egui::{self, vec2, LayerId, Sense, Shape},
     logging::default_mixed_logger,
-    EframeMain, EguiInspect, InspectNumber,
+    EframeMain, EguiInspect,
 };
 use std::sync::Arc;
 use viewport_quad::ViewportQuad;
@@ -68,7 +68,10 @@ impl FragViewport {
 
 impl EguiInspect for FragViewport {
     fn inspect_mut(&mut self, _: &str, ui: &mut egui::Ui) {
-        self.t.inspect_with_slider("uniform", ui, 0.0, 1.0);
+        ui.horizontal(|ui| {
+            ui.label("uniform:");
+            ui.add(egui::Slider::new(&mut self.t, 0.0..=1.0));
+        });
         self.paint_viewport(ui);
         ui.label("a widget directly after the viewport...");
     }

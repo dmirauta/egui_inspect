@@ -1,11 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
-
 use egui_inspect::egui::{self, Color32, Stroke, Style};
-use egui_inspect::search_select::SearchSelection;
-use egui_inspect::{EframeMain, EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
-
 use egui_inspect::egui_plot::{Line, Plot};
+use egui_inspect::search_select::SearchSelection;
+use egui_inspect::{EframeMain, EguiInspect, FrameStyle, DEFAULT_FRAME_STYLE};
 use egui_inspect_wrap::VisualsUi;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(EguiInspect)]
 #[inspect(collapsible)]

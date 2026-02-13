@@ -3,7 +3,7 @@ use crate::FieldAttr;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
-use syn::Field;
+use syn::{Field, TypePath};
 
 pub(crate) fn path_is_internally_handled(path_str: &String) -> bool {
     path_str == "f32"
@@ -53,11 +53,16 @@ fn handle_number_path(
     loose_field: bool,
 ) -> Option<TokenStream> {
     let name = &field.ident;
+    let ty = match &field.ty {
+        syn::Type::Path(TypePath { path, .. }) => path.segments[0].ident.clone(),
+        _ => todo!(),
+    };
 
     let name_str = match &attrs.name {
         Some(n) => n.clone(),
         None => name.clone().unwrap().to_string(),
     };
+    let name_str = format!("{name_str}:");
 
     let no_edit = attrs.no_edit;
     let slider = attrs.slider;
@@ -72,23 +77,21 @@ fn handle_number_path(
     let base = if loose_field {
         quote!(#name)
     } else {
-        quote!(self.#name)
+        quote!(&mut self.#name)
     };
 
     if mutable && !slider && !log_slider {
         match (min, max) {
             (Some(mi), Some(ma)) => {
                 return Some(quote_spanned! {field.span() => {
-                    egui_inspect::InspectNumber::inspect_with_drag_value(&mut #base, &#name_str, ui, #mi, #ma);
+                        ui.horizontal(|ui| {
+                            ui.label(#name_str);
+                            ui.add(egui_inspect::egui::DragValue::new(#base).max_decimals(10).range((#mi as #ty)..=(#ma as #ty)));
+                        });
                     }
                 });
             }
-            _ => {
-                return Some(quote_spanned! {field.span() => {
-                    #base.inspect_mut(&#name_str, ui);
-                    }
-                });
-            }
+            _ => return None,
         }
     }
 
@@ -97,15 +100,19 @@ fn handle_number_path(
 
     if mutable && log_slider {
         return Some(quote_spanned! {field.span() => {
-        // egui_inspect::InspectNumber::inspect_with_log_slider(&mut self.#name, &#name_str, ui, #min, #max);
-        #base.inspect_with_log_slider(&#name_str, ui, #min, #max);
+                ui.horizontal(|ui| {
+                    ui.label(#name_str);
+                    ui.add(egui_inspect::egui::Slider::new(#base, (#min as #ty)..=(#max as #ty)).logarithmic(true));
+                });
             }
         });
     }
     if mutable && slider {
         return Some(quote_spanned! {field.span() => {
-        // egui_inspect::InspectNumber::inspect_with_slider(&mut self.#name, &#name_str, ui, #min, #max);
-        #base.inspect_with_slider(&#name_str, ui, #min, #max);
+                ui.horizontal(|ui| {
+                    ui.label(#name_str);
+                    ui.add(egui_inspect::egui::Slider::new(#base, (#min as #ty)..=(#max as #ty)).logarithmic(true));
+                });
             }
         });
     }

@@ -43,7 +43,7 @@ struct EframeMainAttr {
 ///
 /// Longer example:
 /// ```
-///use egui_inspect::{egui, EframeMain, EguiInspect, InspectNumber};
+///use egui_inspect::{egui, EframeMain, EguiInspect};
 ///
 ///#[derive(Default, Debug, EguiInspect)]
 ///struct Options {
@@ -255,7 +255,7 @@ struct DeriveAttr {
 ///
 /// Example:
 /// ```
-///use egui_inspect::{egui, EframeMain, EguiInspect, InspectNumber};
+///use egui_inspect::{egui, EframeMain, EguiInspect};
 ///
 ///#[derive(EguiInspect)]
 ///struct Options {

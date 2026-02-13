@@ -65,12 +65,6 @@ pub trait EguiInspect {
     }
 }
 
-pub trait InspectNumber {
-    fn inspect_with_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32);
-    fn inspect_with_log_slider(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32);
-    fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32);
-}
-
 pub struct FrameStyle {
     pub inner_margin: Margin,
     pub outer_margin: Margin,

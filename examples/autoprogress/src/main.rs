@@ -1,6 +1,6 @@
 use egui_inspect::{
     background_task::{BackgroundTask, Progress, SynchedStatsOpts, Task},
-    EframeMain, EguiInspect, InspectNumber, DPEQ,
+    EframeMain, EguiInspect, DPEQ,
 };
 use std::time::Duration;
 
