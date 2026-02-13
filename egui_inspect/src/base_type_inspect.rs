@@ -3,8 +3,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use crate::InspectString;
-
 macro_rules! impl_inspect_num {
     ($($t:ty),+) => {
         $(
@@ -89,28 +87,26 @@ impl crate::EguiInspect for String {
         });
     }
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        self.inspect_mut_singleline(label, ui);
+        str_inspect_mut_singleline(self, label, ui);
     }
 }
 
-impl crate::InspectString for String {
-    fn inspect_mut_multiline(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            if !label.is_empty() {
-                ui.label(label.to_owned() + ":");
-            }
-            ui.text_edit_multiline(self);
-        });
-    }
+pub fn str_inspect_mut_multiline(s: &mut String, label: &str, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        if !label.is_empty() {
+            ui.label(label.to_owned() + ":");
+        }
+        ui.text_edit_multiline(s);
+    });
+}
 
-    fn inspect_mut_singleline(&mut self, label: &str, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            if !label.is_empty() {
-                ui.label(label.to_owned() + ":");
-            }
-            ui.text_edit_singleline(self);
-        });
-    }
+pub fn str_inspect_mut_singleline(s: &mut String, label: &str, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        if !label.is_empty() {
+            ui.label(label.to_owned() + ":");
+        }
+        ui.text_edit_singleline(s);
+    });
 }
 
 impl crate::EguiInspect for bool {

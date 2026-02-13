@@ -130,13 +130,13 @@ fn handle_string_path(field: &Field, mutable: bool, attrs: &FieldAttr) -> Option
 
     if mutable && multiline {
         return Some(quote_spanned! {field.span() => {
-        egui_inspect::InspectString::inspect_mut_multiline(&mut self.#name, &#name_str, ui);
+            egui_inspect::base_type_inspect::str_inspect_mut_multiline(&mut self.#name, &#name_str, ui);
             }
         });
     }
     if mutable && !multiline {
         return Some(quote_spanned! {field.span() => {
-        egui_inspect::InspectString::inspect_mut_singleline(&mut self.#name, &#name_str, ui);
+            egui_inspect::base_type_inspect::str_inspect_mut_singleline(&mut self.#name, &#name_str, ui);
             }
         });
     }

@@ -71,11 +71,6 @@ pub trait InspectNumber {
     fn inspect_with_drag_value(&mut self, label: &str, ui: &mut egui::Ui, min: f32, max: f32);
 }
 
-pub trait InspectString {
-    fn inspect_mut_multiline(&mut self, label: &str, ui: &mut egui::Ui);
-    fn inspect_mut_singleline(&mut self, label: &str, ui: &mut egui::Ui);
-}
-
 pub struct FrameStyle {
     pub inner_margin: Margin,
     pub outer_margin: Margin,
