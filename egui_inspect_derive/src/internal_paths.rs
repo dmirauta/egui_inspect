@@ -42,7 +42,36 @@ pub(crate) fn try_handle_internal_path(
         "f64" | "f32" | "u8" | "i8" | "u16" | "i16" | "u32" | "i32" | "u64" | "i64" | "usize"
         | "isize" => handle_number_path(field, mutable, attrs, loose_field),
         "String" => handle_string_path(field, mutable, attrs),
+        "bool" => handle_bool_path(field, mutable, attrs, loose_field),
         _ => None,
+    }
+}
+
+fn handle_bool_path(
+    field: &Field,
+    mutable: bool,
+    attrs: &FieldAttr,
+    loose_field: bool,
+) -> Option<TokenStream> {
+    match mutable && attrs.button {
+        false => None,
+        true => {
+            let name = &field.ident;
+            let name_str = match &attrs.name {
+                Some(n) => n.clone(),
+                None => name.clone().unwrap().to_string(),
+            };
+            let base = if loose_field {
+                quote!(*#name)
+            } else {
+                quote!(self.#name)
+            };
+            Some(quote_spanned! {
+                field.span() => {
+                    #base = ui.button(#name_str).clicked();
+                }
+            })
+        }
     }
 }
 

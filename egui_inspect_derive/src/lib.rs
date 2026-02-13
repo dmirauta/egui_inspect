@@ -232,6 +232,8 @@ struct FieldAttr {
     custom_func: Option<String>,
     /// Use custom function for mut inspect
     custom_func_mut: Option<String>,
+    /// Use a button for a bool field (will only be set to true during the frame that it is pressed)
+    button: bool,
 }
 
 #[derive(Clone, Debug, Default, FromDeriveInput)]

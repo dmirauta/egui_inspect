@@ -21,14 +21,15 @@ struct MySummation {
     #[default(25)]
     sleep_millis: u64,
     mode: Mode,
-    ready: bool,
+    #[inspect(button)]
+    begin: bool,
 }
 
 impl Task for MySummation {
     type Return = u32;
     /// provide a SynchedStatsOpts object when ready to begin
     fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
-        self.ready
+        self.begin
             .then_some(SynchedStatsOpts::HasExpectedLen(self.iters))
     }
     fn on_exec(&mut self, progress: Progress) -> Self::Return {
@@ -47,13 +48,14 @@ impl Task for MySummation {
 
 #[derive(EguiInspect, better_default::Default)]
 struct Sleep5 {
-    ready: bool,
+    #[inspect(button)]
+    begin: bool,
 }
 
 impl Task for Sleep5 {
     type Return = ();
     fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
-        self.ready.then_some(Default::default())
+        self.begin.then_some(Default::default())
     }
     fn on_exec(&mut self, _: Progress) -> Self::Return {
         std::thread::sleep(Duration::from_secs(5));
