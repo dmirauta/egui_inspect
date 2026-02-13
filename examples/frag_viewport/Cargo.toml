@@ -1,6 +1,6 @@
 [package]
 name = "frag_viewport"
-version = "0.32.0"
+version = "0.33.0"
 edition = "2021"
 
 [dependencies]
