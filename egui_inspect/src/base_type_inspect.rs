@@ -293,3 +293,5 @@ impl<T: crate::EguiInspect> crate::EguiInspect for Rc<RefCell<T>> {
         }
     }
 }
+
+impl crate::EguiInspect for () {}

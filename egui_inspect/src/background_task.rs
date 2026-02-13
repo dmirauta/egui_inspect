@@ -1,49 +1,73 @@
+use crate::{utils::type_name_base, EguiInspect};
+use egui::ProgressBar;
 use std::{
     mem,
     sync::{Arc, Mutex},
     thread::JoinHandle,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
-use crate::{utils::type_name_base, EguiInspect};
-use egui::ProgressBar;
+#[derive(Clone)]
+pub enum SynchedStatsOpts {
+    HasExpectedLen(usize),
+    Spinner { display_count: bool },
+}
+
+impl Default for SynchedStatsOpts {
+    fn default() -> Self {
+        SynchedStatsOpts::Spinner {
+            display_count: false,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct SynchedStats {
     count: usize,
-    expected_len: usize,
     start: Instant,
-    elapsed: Duration,
+    opts: SynchedStatsOpts,
 }
 
 impl SynchedStats {
-    fn new(expected_len: usize) -> Self {
+    fn new(opts: SynchedStatsOpts) -> Self {
         Self {
             count: 0,
-            expected_len,
             start: Instant::now(),
-            elapsed: Default::default(),
+            opts,
         }
     }
     pub fn tick(&mut self) {
         self.count += 1;
-        self.elapsed = self.start.elapsed();
     }
 }
 
 impl EguiInspect for SynchedStats {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            let t = (self.elapsed.as_millis() as f32) / 1000.0;
-            // TODO: better and/or custom formatting
-            format!(
-                "{label} progress: {}/{} done, {t:.2} sec elapsed",
-                self.count, self.expected_len
-            )
-            .inspect("", ui);
-            ui.add(ProgressBar::new(
-                (self.count as f32) / (self.expected_len as f32),
-            ));
+            let elapsed = self.start.elapsed();
+            let t = (elapsed.as_millis() as f32) / 1000.0;
+            match self.opts {
+                SynchedStatsOpts::HasExpectedLen(exp_len) => {
+                    // TODO: better and/or custom formatting
+                    format!(
+                        "{label} progress: {t:.2} sec elapsed, {}/{exp_len} done",
+                        self.count
+                    )
+                    .inspect("", ui);
+                    ui.add(ProgressBar::new((self.count as f32) / (exp_len as f32)));
+                }
+                SynchedStatsOpts::Spinner { display_count } => {
+                    match display_count {
+                        true => {
+                            format!("{label} progress: {t:.2} sec elapsed, {} done", self.count)
+                        }
+                        false => format!("{label} progress: {t:.2} sec elapsed"),
+                    }
+                    .inspect("", ui);
+
+                    ui.spinner();
+                }
+            }
             ui.ctx().request_repaint();
         });
     }
@@ -66,7 +90,7 @@ impl Progress {
 
 pub trait Task: Default + EguiInspect + Send + 'static {
     type Return;
-    fn exec_with_expected_steps(&self) -> Option<usize>;
+    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts>;
     fn on_exec(&mut self, progress: Progress) -> Self::Return;
 }
 
@@ -106,7 +130,7 @@ where
             BackgroundTask::Starting { .. } => {
                 ui.label("Innactive task.");
             }
-            BackgroundTask::Restarting { .. } => {
+            BackgroundTask::Restarting => {
                 ui.label("Restarting...");
             }
             BackgroundTask::Ongoing { progress, .. } => progress.0.inspect(label, ui),
@@ -130,7 +154,7 @@ where
                 task.inspect_mut(params_base_label.as_str(), ui);
                 self.poll_ready();
             }
-            BackgroundTask::Restarting { .. } => {
+            BackgroundTask::Restarting => {
                 ui.label("Restarting...");
             }
             BackgroundTask::Ongoing { progress, .. } => {
@@ -156,8 +180,8 @@ impl<T: Task> BackgroundTask<T>
 where
     T::Return: Send,
 {
-    pub fn spawn(expected_steps: usize, mut task: T) -> Self {
-        let progress = Progress(Arc::new(Mutex::new(SynchedStats::new(expected_steps))));
+    pub fn spawn(ssopts: SynchedStatsOpts, mut task: T) -> Self {
+        let progress = Progress(Arc::new(Mutex::new(SynchedStats::new(ssopts))));
         let _progress = progress.clone();
         let join_handle = std::thread::spawn(move || task.on_exec(_progress));
         Self::Ongoing {
@@ -166,15 +190,15 @@ where
         }
     }
     fn poll_ready(&mut self) {
-        let expected_steps = match self {
+        let ssopts = match self {
             BackgroundTask::Starting { task } => task.exec_with_expected_steps(),
             BackgroundTask::Finished { task, .. } => task.exec_with_expected_steps(),
             _ => None,
         };
-        if let Some(expected_steps) = expected_steps {
+        if let Some(ssopts) = ssopts {
             match mem::replace(self, BackgroundTask::Restarting) {
                 BackgroundTask::Starting { task } | BackgroundTask::Finished { task, .. } => {
-                    *self = Self::spawn(expected_steps, task);
+                    *self = Self::spawn(ssopts, task);
                 }
                 _ => {}
             };

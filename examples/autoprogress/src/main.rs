@@ -1,9 +1,8 @@
-use std::time::Duration;
-
 use egui_inspect::{
-    background_task::{BackgroundTask, Progress, Task},
+    background_task::{BackgroundTask, Progress, SynchedStatsOpts, Task},
     EframeMain, EguiInspect, InspectNumber, DPEQ,
 };
+use std::time::Duration;
 
 #[derive(EguiInspect, Clone, DPEQ, Default)]
 enum Mode {
@@ -27,9 +26,10 @@ struct MySummation {
 
 impl Task for MySummation {
     type Return = u32;
-    /// provide an expected number of iterations when ready to begin
-    fn exec_with_expected_steps(&self) -> Option<usize> {
-        self.ready.then_some(self.iters)
+    /// provide a SynchedStatsOpts object when ready to begin
+    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
+        self.ready
+            .then_some(SynchedStatsOpts::HasExpectedLen(self.iters))
     }
     fn on_exec(&mut self, progress: Progress) -> Self::Return {
         (0..self.iters as u32)
@@ -45,8 +45,24 @@ impl Task for MySummation {
     }
 }
 
+#[derive(EguiInspect, better_default::Default)]
+struct Sleep5 {
+    ready: bool,
+}
+
+impl Task for Sleep5 {
+    type Return = ();
+    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
+        self.ready.then_some(Default::default())
+    }
+    fn on_exec(&mut self, _: Progress) -> Self::Return {
+        std::thread::sleep(Duration::from_secs(5));
+    }
+}
+
 #[derive(Default, EguiInspect, EframeMain)]
 pub struct AutoProgressBarTest {
     background_task_1: BackgroundTask<MySummation>,
     background_task_2: BackgroundTask<MySummation>,
+    background_task_3: BackgroundTask<Sleep5>,
 }
