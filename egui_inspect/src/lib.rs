@@ -53,6 +53,8 @@ pub use egui;
 use egui::{Frame, Margin, Stroke};
 /// See also [EguiInspect]
 pub use egui_inspect_derive::*;
+#[cfg(feature = "plotting")]
+pub use egui_plot;
 
 /// Base trait to automatically inspect structs
 pub trait EguiInspect {

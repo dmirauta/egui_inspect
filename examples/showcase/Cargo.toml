@@ -1,6 +1,6 @@
 [package]
 name = "showcase"
-version = "0.31.0"
+version = "0.32.0"
 edition = "2021"
 
 publish = false
@@ -8,6 +8,5 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui_inspect = { path = "../../egui_inspect" }
+egui_inspect = { path = "../../egui_inspect", features = ["plotting"] }
 egui_inspect_wrap = { path = "../../egui_inspect_wrap" }
-egui_plot = "0.31"

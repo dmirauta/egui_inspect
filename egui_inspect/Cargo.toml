@@ -1,6 +1,6 @@
 [package]
 name = "egui_inspect"
-version = "0.31.0"
+version = "0.32.0"
 edition = "2021"
 description = "Easily creating UI to preview and edit data"
 readme = "../README.md"
@@ -10,9 +10,10 @@ categories = ["gui"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui = "0.31"
-eframe = "0.31"
-egui_extras = { version = "0.31", features = ["datepicker"], optional = true }
+egui = "0.32"
+eframe = "0.32"
+egui_plot = {version = "0.33", optional = true} # NOTE: seemingly its version is out of step with the rest
+egui_extras = { version = "0.32", features = ["datepicker"], optional = true }
 egui_inspect_derive = { path = "../egui_inspect_derive" }
 
 derive-getters = "0.5"
@@ -27,3 +28,4 @@ fern = { version = "0.7", optional = true }
 [features]
 toml = ["dep:toml", "dep:egui_extras", "dep:chrono"]
 logging = ["dep:log", "dep:fern", "dep:chrono"]
+plotting = ["dep:egui_plot"]

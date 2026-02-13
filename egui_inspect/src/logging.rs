@@ -37,7 +37,7 @@ impl GuiLogData {
             .map(|(_, brt, _)| brt.text() == item.text())
         {
             let (_, _, count) = self.items.back_mut().unwrap();
-            *count += 1;
+            *count += 1; // TODO: items of different severity/color but the same characters will still combine
         } else {
             self.items.push_back((creation_time, item, 1));
         }

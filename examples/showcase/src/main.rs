@@ -4,8 +4,8 @@ use egui_inspect::egui::{self, Color32, Stroke, Style};
 use egui_inspect::search_select::SearchSelection;
 use egui_inspect::{EframeMain, EguiInspect, FrameStyle, InspectNumber, DEFAULT_FRAME_STYLE};
 
+use egui_inspect::egui_plot::{Line, Plot};
 use egui_inspect_wrap::VisualsUi;
-use egui_plot::{Line, Plot};
 
 #[derive(EguiInspect)]
 #[inspect(collapsible)]
@@ -121,7 +121,7 @@ impl EguiInspect for MyPlot {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
         ui.label(label);
         Plot::new(label).height(200.0).show(ui, |pui| {
-            pui.line(Line::new(self.xy.clone()).stroke(self.stroke))
+            pui.line(Line::new("my_plot", self.xy.clone()).stroke(self.stroke))
         });
     }
 

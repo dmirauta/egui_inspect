@@ -221,7 +221,7 @@ macro_rules! impl_inspect_map {
                             s.inspect_mut("new key", ui);
                             if ui.button("Insert").clicked() {
                                 self.insert(s.clone(), T::default());
-                                ui.close_menu();
+                                ui.close();
                             }
                         });
                     });
