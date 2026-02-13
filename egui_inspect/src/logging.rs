@@ -179,8 +179,7 @@ pub fn setup_mixed_logger_with_extra(opt: FileLogOption, extra: Option<Box<dyn l
         };
         if let Some(log_path) = &log_path {
             log_path_str = Some(log_path.to_str().unwrap().to_string());
-            let file_log = fern::log_file(log_path);
-            if let Ok(file_log) = file_log {
+            if let Ok(file_log) = fern::log_file(log_path) {
                 text_loggers = text_loggers.chain(file_log);
             } else {
                 file_log_success = false;

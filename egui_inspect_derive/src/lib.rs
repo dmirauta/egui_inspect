@@ -416,9 +416,9 @@ fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: &DeriveA
     inner
 }
 
-fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> TokenStream {
+fn handle_enum(data_enum: &DataEnum, struct_name: &Ident, mutable: bool) -> TokenStream {
     let variants: Vec<_> = data_enum.variants.iter().collect();
-    let name_arms = variants.iter().map(|v| variant_name_arm(v, _struct_name));
+    let name_arms = variants.iter().map(|v| variant_name_arm(v, struct_name));
 
     let reflect_variant_name = quote!(
         let current_variant = match self {
@@ -426,10 +426,10 @@ fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> Tok
         };
     );
 
-    let combo_opts = variants.iter().map(|v| variant_combo(v, _struct_name));
+    let combo_opts = variants.iter().map(|v| variant_combo(v, struct_name));
     let inspect_arms = variants
         .iter()
-        .map(|v| variant_inspect_arm(v, _struct_name, mutable));
+        .map(|v| variant_inspect_arm(v, struct_name, mutable));
 
     let variant_or_option = if mutable {
         quote! {
@@ -458,46 +458,46 @@ fn handle_enum(data_enum: &DataEnum, _struct_name: &Ident, mutable: bool) -> Tok
     )
 }
 
-fn variant_name_arm(variant: &Variant, _struct_name: &Ident) -> TokenStream {
+fn variant_name_arm(variant: &Variant, struct_name: &Ident) -> TokenStream {
     let ident = &variant.ident;
     match &variant.fields {
         Fields::Named(_) => {
-            quote!(#_struct_name::#ident {..} => stringify!(#ident))
+            quote!(#struct_name::#ident {..} => stringify!(#ident))
         }
         Fields::Unnamed(_) => {
-            quote!(#_struct_name::#ident (..) => stringify!(#ident))
+            quote!(#struct_name::#ident (..) => stringify!(#ident))
         }
         Fields::Unit => {
-            quote!(#_struct_name::#ident => stringify!(#ident))
+            quote!(#struct_name::#ident => stringify!(#ident))
         }
     }
 }
 
-fn variant_combo(variant: &Variant, _struct_name: &Ident) -> TokenStream {
+fn variant_combo(variant: &Variant, struct_name: &Ident) -> TokenStream {
     let ident = &variant.ident;
     // TODO: Replace with handle_fields,
     // which would need to take this ident as the base for fields instead of "self".
     match &variant.fields {
         Fields::Named(fields) => {
             let defaults = fields.named.iter().map(|f| {
-                let ident = f.ident.clone();
+                let ident = &f.ident;
                 quote!( #ident: Default::default() )
             });
             quote!(ui.selectable_value(self, 
-                                       #_struct_name::#ident { #(#defaults),* }, 
+                                       #struct_name::#ident { #(#defaults),* }, 
                                        stringify!(#ident)))
         }
         Fields::Unnamed(fields) => {
             let defaults = fields.unnamed.iter().map(|_| quote!(Default::default()));
-            quote!(ui.selectable_value(self, #_struct_name::#ident ( #(#defaults),* ), stringify!(#ident)))
+            quote!(ui.selectable_value(self, #struct_name::#ident ( #(#defaults),* ), stringify!(#ident)))
         }
         Fields::Unit => {
-            quote!(ui.selectable_value(self, #_struct_name::#ident, stringify!(#ident)))
+            quote!(ui.selectable_value(self, #struct_name::#ident, stringify!(#ident)))
         }
     }
 }
 
-fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident, mutable: bool) -> TokenStream {
+fn variant_inspect_arm(variant: &Variant, struct_name: &Ident, mutable: bool) -> TokenStream {
     let ident = &variant.ident;
     match &variant.fields {
         Fields::Named(fields) => {
@@ -515,7 +515,7 @@ fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident, mutable: bool) -
                 .named
                 .iter()
                 .map(|f| handle_named_field(f, mutable, true));
-            quote!(#_struct_name::#ident { #(#field_idents),* } => { #(#inspect_fields;)* })
+            quote!(#struct_name::#ident { #(#field_idents),* } => { #(#inspect_fields;)* })
         }
         Fields::Unnamed(fields) => {
             let field_idents: Vec<_> = (0..fields.unnamed.len()).map(|i| Ident::new(format!("unnamed_{i}").as_str(), Span::call_site())).collect();
@@ -526,10 +526,10 @@ fn variant_inspect_arm(variant: &Variant, _struct_name: &Ident, mutable: bool) -
                     quote! {#id.inspect("", ui)}
                 }
             });
-            quote!(#_struct_name::#ident (#(#field_idents),*) => { #(#inspect_fields;)* })
+            quote!(#struct_name::#ident (#(#field_idents),*) => { #(#inspect_fields;)* })
         }
         Fields::Unit => {
-            quote!(#_struct_name::#ident => () )
+            quote!(#struct_name::#ident => () )
         }
     }
 }
