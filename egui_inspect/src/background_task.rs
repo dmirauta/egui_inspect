@@ -1,4 +1,4 @@
-use crate::{utils::type_name_base, EguiInspect};
+use crate::{utils::type_name_base, EguiInspect, DEFAULT_FRAME_STYLE};
 use egui::ProgressBar;
 use std::{
     mem,
@@ -49,19 +49,16 @@ impl EguiInspect for SynchedStats {
             match self.opts {
                 SynchedStatsOpts::HasExpectedLen(exp_len) => {
                     // TODO: better and/or custom formatting
-                    format!(
-                        "{label} progress: {t:.2} sec elapsed, {}/{exp_len} done",
-                        self.count
-                    )
-                    .inspect("", ui);
+                    format!("{label}: {t:.2} sec elapsed, {}/{exp_len} done", self.count)
+                        .inspect("", ui);
                     ui.add(ProgressBar::new((self.count as f32) / (exp_len as f32)));
                 }
                 SynchedStatsOpts::Spinner { display_count } => {
                     match display_count {
                         true => {
-                            format!("{label} progress: {t:.2} sec elapsed, {} done", self.count)
+                            format!("{label}: {t:.2} sec elapsed, {} done", self.count)
                         }
-                        false => format!("{label} progress: {t:.2} sec elapsed"),
+                        false => format!("{label}: {t:.2} sec elapsed"),
                     }
                     .inspect("", ui);
 
@@ -90,33 +87,37 @@ impl Progress {
 
 pub trait Task: Default + EguiInspect + Send + 'static {
     type Return;
-    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts>;
+    fn begin_signal(&self) -> Option<SynchedStatsOpts>;
     fn on_exec(&mut self, progress: Progress) -> Self::Return;
+}
+
+enum BackgroundTaskState<T: Task> {
+    PendingStart {
+        init_params: T,
+    },
+    Ongoing {
+        progress: Progress,
+        join_handle: Option<JoinHandle<T::Return>>,
+    },
+    Restarting,
 }
 
 /// A struct which allows for easily running a task in the background while tracking its progress
 /// in an egui ui. In the starting state it exposes the initialisation parameters for its
 /// associated task, in the running/ongoing state it shows a progress bar, and in the finished
 /// state it displays the result object and offers to restart.
-pub enum BackgroundTask<T: Task> {
-    Starting {
-        task: T,
-    },
-    Ongoing {
-        progress: Progress,
-        join_handle: Option<JoinHandle<T::Return>>,
-    },
-    Finished {
-        result: Result<T::Return, String>,
-        task: T,
-    },
-    Restarting,
+pub struct BackgroundTask<T: Task> {
+    state: BackgroundTaskState<T>,
+    pub res: Result<T::Return, String>,
 }
 
 impl<T: Task> Default for BackgroundTask<T> {
     fn default() -> Self {
-        Self::Starting {
-            task: Default::default(),
+        Self {
+            state: BackgroundTaskState::PendingStart {
+                init_params: Default::default(),
+            },
+            res: Err("".into()),
         }
     }
 }
@@ -126,53 +127,50 @@ where
     T::Return: EguiInspect + Send + 'static,
 {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        match self {
-            BackgroundTask::Starting { .. } => {
+        match &self.state {
+            BackgroundTaskState::PendingStart { .. } => {
                 ui.label("Innactive task.");
             }
-            BackgroundTask::Restarting => {
-                ui.label("Restarting...");
-            }
-            BackgroundTask::Ongoing { progress, .. } => progress.0.inspect(label, ui),
-            BackgroundTask::Finished { result, .. } => match result {
-                Ok(r) => {
-                    r.inspect(format!("{label} result").as_str(), ui);
+            BackgroundTaskState::Restarting => { /* state only briefly used inside poll_ready */ }
+            BackgroundTaskState::Ongoing { progress, .. } => progress.0.inspect(label, ui),
+        }
+        match &self.res {
+            Ok(r) => r.inspect(&format!("{label} result"), ui),
+            Err(e) => {
+                if !e.is_empty() {
+                    e.inspect(&format!("{label} error"), ui)
                 }
-                Err(e) => e.inspect(format!("{label} error").as_str(), ui),
-            },
+            }
         }
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        let mut params_base_label = format!("{} parameters", type_name_base::<T>());
-        if !label.is_empty() {
-            params_base_label += format!(" ({label})").as_str();
-        }
-
-        match self {
-            BackgroundTask::Starting { task } => {
-                task.inspect_mut(params_base_label.as_str(), ui);
-                self.poll_ready();
+        DEFAULT_FRAME_STYLE.to_frame().show(ui, |ui| {
+            if !label.is_empty() {
+                ui.strong(format!("{label} ({})", type_name_base::<T>()));
             }
-            BackgroundTask::Restarting => {
-                ui.label("Restarting...");
-            }
-            BackgroundTask::Ongoing { progress, .. } => {
-                progress.0.inspect(label, ui);
-                self.poll_result();
-            }
-            BackgroundTask::Finished { result, task } => {
-                match result {
-                    Ok(r) => {
-                        r.inspect(format!("{label} result").as_str(), ui);
-                    }
-                    Err(e) => e.inspect(format!("{label} error").as_str(), ui),
+            match &mut self.state {
+                BackgroundTaskState::PendingStart { init_params } => {
+                    init_params.inspect_mut("params", ui);
+                    self.poll_ready();
                 }
-
-                task.inspect_mut(format!("{params_base_label} (start again)").as_str(), ui);
-                self.poll_ready();
+                BackgroundTaskState::Restarting => { /* state only briefly used inside poll_ready */
+                }
+                BackgroundTaskState::Ongoing { progress, .. } => {
+                    // progress.0.inspect(&format!("{label} progress"), ui);
+                    progress.0.inspect("progress", ui);
+                    self.poll_result();
+                }
             }
-        }
+            match &mut self.res {
+                Ok(r) => r.inspect("previous result", ui),
+                Err(e) => {
+                    if !e.is_empty() {
+                        e.inspect("previous error", ui)
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -180,49 +178,43 @@ impl<T: Task> BackgroundTask<T>
 where
     T::Return: Send,
 {
-    pub fn spawn(ssopts: SynchedStatsOpts, mut task: T) -> Self {
+    pub fn spawn(&mut self, ssopts: SynchedStatsOpts, mut init_params: T) {
         let progress = Progress(Arc::new(Mutex::new(SynchedStats::new(ssopts))));
         let _progress = progress.clone();
-        let join_handle = std::thread::spawn(move || task.on_exec(_progress));
-        Self::Ongoing {
+        let join_handle = std::thread::spawn(move || init_params.on_exec(_progress));
+        self.state = BackgroundTaskState::Ongoing {
             progress,
             join_handle: Some(join_handle),
-        }
+        };
     }
     fn poll_ready(&mut self) {
-        let ssopts = match self {
-            BackgroundTask::Starting { task } => task.exec_with_expected_steps(),
-            BackgroundTask::Finished { task, .. } => task.exec_with_expected_steps(),
+        let ssopts = match &self.state {
+            BackgroundTaskState::PendingStart { init_params } => init_params.begin_signal(),
             _ => None,
         };
         if let Some(ssopts) = ssopts {
-            match mem::replace(self, BackgroundTask::Restarting) {
-                BackgroundTask::Starting { task } | BackgroundTask::Finished { task, .. } => {
-                    *self = Self::spawn(ssopts, task);
-                }
-                _ => {}
+            if let BackgroundTaskState::PendingStart { init_params } =
+                mem::replace(&mut self.state, BackgroundTaskState::Restarting)
+            {
+                self.spawn(ssopts, init_params);
             };
         }
     }
     fn poll_result(&mut self) {
-        let mut res = Err(String::new());
-        if let BackgroundTask::Ongoing { join_handle, .. } = self {
-            if join_handle.is_some() && join_handle.as_ref().unwrap().is_finished() {
-                res = join_handle
+        if let BackgroundTaskState::Ongoing { join_handle, .. } = &mut self.state {
+            // NOTE: handle is only briefly None when we take the result just after its finished
+            if join_handle.as_ref().unwrap().is_finished() {
+                self.res = join_handle
                     .take()
                     .unwrap() // already checked is_some
                     .join()
                     .map_err(|e| format!("{e:?}"));
-            }
-        }
-        if let Err(es) = &res {
-            if es.is_empty() {
+            } else {
                 return;
             }
         }
-        *self = BackgroundTask::Finished {
-            result: res,
-            task: Default::default(),
+        self.state = BackgroundTaskState::PendingStart {
+            init_params: Default::default(),
         }
     }
 }

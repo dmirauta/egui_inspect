@@ -28,7 +28,7 @@ struct MySummation {
 impl Task for MySummation {
     type Return = u32;
     /// provide a SynchedStatsOpts object when ready to begin
-    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
+    fn begin_signal(&self) -> Option<SynchedStatsOpts> {
         self.begin
             .then_some(SynchedStatsOpts::HasExpectedLen(self.iters))
     }
@@ -54,7 +54,7 @@ struct Sleep5 {
 
 impl Task for Sleep5 {
     type Return = ();
-    fn exec_with_expected_steps(&self) -> Option<SynchedStatsOpts> {
+    fn begin_signal(&self) -> Option<SynchedStatsOpts> {
         self.begin.then_some(Default::default())
     }
     fn on_exec(&mut self, _: Progress) -> Self::Return {
