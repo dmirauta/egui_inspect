@@ -47,8 +47,9 @@ impl Task for MySummation {
 }
 
 #[derive(EguiInspect, better_default::Default)]
+#[inspect(no_border)]
 struct Sleep5 {
-    #[inspect(button)]
+    #[inspect(button, name = "sleep for 5 sec")]
     begin: bool,
 }
 
@@ -66,5 +67,6 @@ impl Task for Sleep5 {
 pub struct AutoProgressBarTest {
     background_task_1: BackgroundTask<MySummation>,
     background_task_2: BackgroundTask<MySummation>,
-    background_task_3: BackgroundTask<Sleep5>,
+    #[inspect(name = "\"sleep for 5 sec task\"")]
+    background_task_3: BackgroundTask<Sleep5, true>,
 }

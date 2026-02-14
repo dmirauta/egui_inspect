@@ -106,12 +106,12 @@ enum BackgroundTaskState<T: Task> {
 /// in an egui ui. In the starting state it exposes the initialisation parameters for its
 /// associated task, in the running/ongoing state it shows a progress bar, and in the finished
 /// state it displays the result object and offers to restart.
-pub struct BackgroundTask<T: Task> {
+pub struct BackgroundTask<T: Task, const COMPACT_LABELS: bool = false> {
     state: BackgroundTaskState<T>,
     pub res: Result<T::Return, String>,
 }
 
-impl<T: Task> Default for BackgroundTask<T> {
+impl<T: Task, const COMPACT_LABELS: bool> Default for BackgroundTask<T, COMPACT_LABELS> {
     fn default() -> Self {
         Self {
             state: BackgroundTaskState::PendingStart {
@@ -121,60 +121,73 @@ impl<T: Task> Default for BackgroundTask<T> {
         }
     }
 }
+macro_rules! base_inspect {
+    ($self:ident, $label: ident, $ui: ident, $state_inspect: tt) => {
+        if COMPACT_LABELS {
+            $state_inspect($self, "", &format!("{} progress", $label), $ui);
+            base_inspect!($self, $ui); // res inspect
+        } else {
+            DEFAULT_FRAME_STYLE.to_frame().show($ui, |ui| {
+                ui.strong(format!("{} ({})", $label, type_name_base::<T>()));
+                $state_inspect($self, "params", "progress", ui);
+                base_inspect!($self, ui); // res inspect
+            });
+        }
+    };
+    ($self:ident, $ui: ident) => {
+        match &$self.res {
+            Ok(r) => r.inspect("previous result", $ui),
+            Err(e) => {
+                if !e.is_empty() {
+                    e.inspect("previous error", $ui)
+                }
+            }
+        }
+    };
+}
 
-impl<T: Task> EguiInspect for BackgroundTask<T>
+impl<T: Task, const COMPACT_LABELS: bool> EguiInspect for BackgroundTask<T, COMPACT_LABELS>
 where
     T::Return: EguiInspect + Send + 'static,
 {
     fn inspect(&self, label: &str, ui: &mut egui::Ui) {
-        match &self.state {
-            BackgroundTaskState::PendingStart { .. } => {
-                ui.label("Innactive task.");
-            }
-            BackgroundTaskState::Restarting => { /* state only briefly used inside poll_ready */ }
-            BackgroundTaskState::Ongoing { progress, .. } => progress.0.inspect(label, ui),
-        }
-        match &self.res {
-            Ok(r) => r.inspect(&format!("{label} result"), ui),
-            Err(e) => {
-                if !e.is_empty() {
-                    e.inspect(&format!("{label} error"), ui)
+        let state_inspect = |s: &Self, _: &str, prog_label: &str, ui: &mut egui::Ui| {
+            match &s.state {
+                BackgroundTaskState::PendingStart { .. } => {
+                    ui.label("Innactive task.");
                 }
+                BackgroundTaskState::Restarting => { /* state only briefly used inside poll_ready */
+                }
+                BackgroundTaskState::Ongoing { progress, .. } => progress.0.inspect(prog_label, ui),
             }
-        }
+        };
+        base_inspect!(self, label, ui, state_inspect);
     }
 
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
-        DEFAULT_FRAME_STYLE.to_frame().show(ui, |ui| {
-            if !label.is_empty() {
-                ui.strong(format!("{label} ({})", type_name_base::<T>()));
-            }
-            match &mut self.state {
+        let state_inspect = |s: &mut Self,
+                             param_label: &str,
+                             prog_label: &str,
+                             ui: &mut egui::Ui| {
+            match &mut s.state {
                 BackgroundTaskState::PendingStart { init_params } => {
-                    init_params.inspect_mut("params", ui);
-                    self.poll_ready();
+                    init_params.inspect_mut(param_label, ui);
+                    s.poll_ready();
                 }
                 BackgroundTaskState::Restarting => { /* state only briefly used inside poll_ready */
                 }
                 BackgroundTaskState::Ongoing { progress, .. } => {
                     // progress.0.inspect(&format!("{label} progress"), ui);
-                    progress.0.inspect("progress", ui);
-                    self.poll_result();
+                    progress.0.inspect(prog_label, ui);
+                    s.poll_result();
                 }
             }
-            match &mut self.res {
-                Ok(r) => r.inspect("previous result", ui),
-                Err(e) => {
-                    if !e.is_empty() {
-                        e.inspect("previous error", ui)
-                    }
-                }
-            }
-        });
+        };
+        base_inspect!(self, label, ui, state_inspect);
     }
 }
 
-impl<T: Task> BackgroundTask<T>
+impl<T: Task, const COMPACT_LABELS: bool> BackgroundTask<T, COMPACT_LABELS>
 where
     T::Return: Send,
 {
