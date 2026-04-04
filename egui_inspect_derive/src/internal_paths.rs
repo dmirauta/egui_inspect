@@ -140,7 +140,7 @@ fn handle_number_path(
         return Some(quote_spanned! {field.span() => {
                 ui.horizontal(|ui| {
                     ui.label(#name_str);
-                    ui.add(egui_inspect::egui::Slider::new(#base, (#min as #ty)..=(#max as #ty)).logarithmic(true));
+                    ui.add(egui_inspect::egui::Slider::new(#base, (#min as #ty)..=(#max as #ty)).logarithmic(false));
                 });
             }
         });
