@@ -1,6 +1,6 @@
 use egui_inspect::{
     eframe::{
-        egui_glow,
+        self, egui_glow,
         glow::{self, HasContext},
         CreationContext,
     },
@@ -16,8 +16,15 @@ mod viewport_quad;
 static FRAG_SHADER: &str = include_str!("../test_fragment.glsl");
 const ASPECT: f32 = 9.0 / 16.0;
 
+fn get_opts() -> eframe::NativeOptions {
+    eframe::NativeOptions {
+        renderer: eframe::Renderer::Glow,
+        ..Default::default()
+    }
+}
+
 #[derive(EframeMain)]
-#[eframe_main(init = "FragViewport::init(_cc)")]
+#[eframe_main(init = "FragViewport::init(_cc)", options = "get_opts()")]
 struct FragViewport {
     quad: ViewportQuad,
     t: f32,

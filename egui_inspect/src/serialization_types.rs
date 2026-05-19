@@ -2,7 +2,6 @@
 // though a plus side of the manual implementation is that the structure is fixed (no
 // array or hashmap/object-field inserting/removing).
 
-use chrono::Datelike;
 use egui_extras::DatePickerButton;
 use toml::value::Date;
 
@@ -14,12 +13,9 @@ impl crate::EguiInspect for toml::value::Date {
     fn inspect_mut(&mut self, label: &str, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             ui.label(label);
-            let mut cdt = chrono::naive::NaiveDate::from_ymd_opt(
-                self.year.into(),
-                self.month.into(),
-                self.day.into(),
-            );
-            if let Some(cdt) = &mut cdt {
+            let mut cdt =
+                jiff::civil::Date::new(self.year as i16, self.month as i8, self.day as i8);
+            if let Ok(cdt) = &mut cdt {
                 ui.add(DatePickerButton::new(cdt));
                 // TODO: Careful casting?
                 *self = Date {

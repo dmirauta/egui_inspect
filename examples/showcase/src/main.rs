@@ -173,14 +173,14 @@ impl MyApp {
 }
 
 impl egui_inspect::eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut egui_inspect::eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut egui_inspect::eframe::Frame) {
         if let MyEnum::VariantWithStructData { my_plot, .. } = &mut self.fancy_enum {
             my_plot
                 .xy
                 .clone_from(&self.containers.an_ugly_internal_name);
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show_inside(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.columns(2, |cols| {
                     // display own derived ui mutably
@@ -192,7 +192,7 @@ impl egui_inspect::eframe::App for MyApp {
                             .inspect_mut("visuals (egui style)", &mut cols[1]);
 
                         // TODO: should ideally only set when changing
-                        ctx.set_style(Style {
+                        cols[1].ctx().set_global_style(Style {
                             visuals: self.visuals.clone().into(),
                             ..Default::default()
                         })

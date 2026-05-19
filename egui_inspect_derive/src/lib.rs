@@ -124,8 +124,8 @@ pub fn derive_eframe_main(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         },
         false => quote! {
             impl egui_inspect::eframe::App for #ident {
-                fn update(&mut self, ctx: &egui_inspect::egui::Context, _frame: &mut egui_inspect::eframe::Frame) {
-                    egui_inspect::egui::CentralPanel::default().show(ctx, |ui| {
+                fn ui(&mut self, ui: &mut egui_inspect::egui::Ui, _frame: &mut egui_inspect::eframe::Frame) {
+                    egui_inspect::egui::CentralPanel::default().show_inside(ui, |ui| {
                         egui_inspect::egui::ScrollArea::both().show(ui, |ui| {
                             self.inspect_mut("", ui);
                             #post_inspect
