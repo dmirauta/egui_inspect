@@ -1,5 +1,5 @@
 use egui_inspect::{
-    eframe::glow::{self, HasContext, Program, VertexArray},
+    eframe::glow::{self, HasContext, Program},
     logging::log::warn,
 };
 use std::sync::Arc;
@@ -25,7 +25,6 @@ macro_rules! pogle {
 
 /// a quad which covers the whole viewport
 pub struct ViewportQuad {
-    pub va: VertexArray,
     pub prog: Option<Program>,
 }
 
@@ -33,17 +32,11 @@ static LARGE_TRI_VERT_SHADER: &str = include_str!("../viewport_tri_vertex.glsl")
 
 impl ViewportQuad {
     pub fn new(gl: &Arc<glow::Context>, fragment_shader_source: &str) -> Self {
-        unsafe {
-            let va = gl
-                .create_vertex_array()
-                .expect("Cannot create vertex array");
-
-            let mut new = Self { va, prog: None };
-            if let Err(e) = new.set_frag_shader(gl, fragment_shader_source) {
-                warn!("Could not set frag shader: {e}")
-            }
-            new
+        let mut new = Self { prog: None };
+        if let Err(e) = new.set_frag_shader(gl, fragment_shader_source) {
+            warn!("Could not set frag shader: {e}")
         }
+        new
     }
     // NOTE: adapted from https://github.com/grovesNL/glow/blob/main/examples/hello/src/main.rs
     pub fn set_frag_shader(
@@ -52,8 +45,6 @@ impl ViewportQuad {
         fragment_shader_source: &str,
     ) -> Result<(), String> {
         unsafe {
-            gl.bind_vertex_array(Some(self.va));
-
             let program = gl.create_program().expect("Cannot create program");
 
             let mut shaders = Vec::with_capacity(2);

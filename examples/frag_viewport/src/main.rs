@@ -50,7 +50,6 @@ impl FragViewport {
 
         let t = self.t;
         let prog = self.quad.prog;
-        let va = Some(self.quad.va);
         ui.ctx()
             .layer_painter(LayerId::background())
             .add(Shape::Callback(egui::PaintCallback {
@@ -59,7 +58,6 @@ impl FragViewport {
                     let gl = painter.gl();
                     unsafe {
                         pogle!(gl, gl.use_program(prog));
-                        pogle!(gl, gl.bind_vertex_array(va));
 
                         if let Some(prog) = prog {
                             let loc = pogle!(gl, gl.get_uniform_location(prog, "t"));
