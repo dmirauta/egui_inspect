@@ -180,7 +180,7 @@ impl egui_inspect::eframe::App for MyApp {
                 .clone_from(&self.containers.an_ugly_internal_name);
         }
 
-        egui::CentralPanel::default().show_inside(ui, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.columns(2, |cols| {
                     // display own derived ui mutably

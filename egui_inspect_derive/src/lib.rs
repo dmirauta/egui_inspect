@@ -408,7 +408,7 @@ fn inspect_data(data: &Data, _struct_name: &Ident, mutable: bool, attr: &DeriveA
     // TODO: Avoid double frame? (with border)
     if let Some(on_hover_text) = attr.on_hover_text.clone() {
         inner = quote!(
-            egui_inspect::egui::Frame::none()
+            egui_inspect::egui::Frame::NONE
                 .show(ui, |ui| {
                    #inner
                 }).response.on_hover_text_at_pointer(#on_hover_text);
